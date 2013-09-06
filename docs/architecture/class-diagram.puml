@@ -1,0 +1,76 @@
+@startuml
+
+package Core {
+
+    class Application {
+        +loadActivity(activity)
+        +unloadActivity(activity)
+
+        +loadService(service)
+        +unloadService(service)
+    }
+
+    class ApplicationContext {
+        +getDocumentsDAO(): DataAccessObject<Document>
+        +getUsersDAO(): DataAccessObject<User>
+    }
+
+    interface Activity {
+        +onLoad(GraphicsContext graphicContext)
+        +onPause(GraphicsContext graphicContext)
+        +onResume(GraphicsContext graphicContext)
+        +onUnload(GraphicsContext graphicContext)
+    }
+
+    interface Service<A, R> {
+        +process(T request, ApplicationContext context): R
+    }
+
+}
+
+package Utils {
+
+    package Data {
+
+        class DataAccessObject<T> {
+            +beginTransaction(): Transaction<T>
+        }
+
+        class Transaction<T> {
+            +get(): Stream<T>
+            +<F> get(FieldAccessor<F> fieldAccessor, F key): Stream<T>
+            +<F> get(UniqueFieldAccessor<F> fieldAccessor, F key): T
+            +update(T oldObject, T newObject): void
+        }
+
+    }
+
+    class GraphicsContext {
+        +bind(Window window)
+        +unbind(Window window)
+    }
+
+}
+
+package Model {
+
+    class Document {
+
+    }
+
+    class User {
+
+    }
+
+}
+
+Application --> Activity
+Application --> Service
+Activity --> GraphicsContext
+Service --> ApplicationContext
+ApplicationContext --> DataAccessObject
+ApplicationContext --> User
+ApplicationContext --> Document
+DataAccessObject --> Transaction
+
+@enduml

@@ -1,0 +1,15 @@
+@startuml
+left to right direction
+
+User <|- Author
+
+User -- (Access document revision)
+(Access document revision) -- ArchiveManager
+
+Author -- (Create document revision)
+(Create document revision) -- ArchiveManager
+
+Author -- (Share document revision)
+(Share document revision) -- ArchiveManager
+
+@enduml
