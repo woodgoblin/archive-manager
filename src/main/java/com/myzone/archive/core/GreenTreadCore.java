@@ -14,7 +14,7 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  * @author myzone
  * @date 9/8/13 11:42 AM
  */
-public abstract class GreenTreadCore<N> implements Core<N> {
+public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, D> {
 
     private final Map<Service<?, ?>, Function<Runnable, Void>> executeOnFunctions;
     private final List<ExecutorService> executorsMap;
@@ -57,9 +57,9 @@ public abstract class GreenTreadCore<N> implements Core<N> {
     }
 
     @Override
-    public void loadService(@NotNull DataService<?, ?> service) {
+    public void loadService(@NotNull PureService<?, ?> service) {
         int i = serviceLoadCounter.incrementAndGet();
-        ExecutorService executor = service instanceof PureService ? executorsMap.get(i % executorsMap.size()) : newSingleThreadExecutor();
+        ExecutorService executor = executorsMap.get(i % executorsMap.size());
 
         executeOnFunctions.putIfAbsent(service, runnable -> {
             executor.submit(runnable);
@@ -71,7 +71,28 @@ public abstract class GreenTreadCore<N> implements Core<N> {
     }
 
     @Override
-    public void unloadService(@NotNull DataService<?, ?> service) {
+    public void unloadService(@NotNull PureService<?, ?> service) {
+        executeOnFunctions.remove(service);
+
+        service.onUnload(this);
+    }
+
+    @Override
+    public void loadService(@NotNull DataService<?, ?, ? super D> service) {
+        int i = serviceLoadCounter.incrementAndGet();
+        ExecutorService executor = newSingleThreadExecutor();
+
+        executeOnFunctions.putIfAbsent(service, runnable -> {
+            executor.submit(runnable);
+
+            return null;
+        });
+
+        service.onLoad(this);
+    }
+
+    @Override
+    public void unloadService(@NotNull DataService<?, ?, ? super D> service) {
         executeOnFunctions.remove(service);
 
         service.onUnload(this);

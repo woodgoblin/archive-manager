@@ -9,8 +9,4 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface Service<A, R> {
 
-    void onLoad(@NotNull Core<?> core);
-
-    void onUnload(@NotNull Core<?> core);
-
 }

@@ -3,7 +3,9 @@ package com.myzone.archive.services;
 import com.myzone.archive.core.Core;
 import com.myzone.archive.core.DataService;
 import com.myzone.archive.data.DataAccessor;
+import com.myzone.archive.model.Document;
 import com.myzone.archive.model.User;
+import com.myzone.utils.ImmutableTuple;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
@@ -12,12 +14,13 @@ import java.util.function.Function;
  * @author myzone
  * @dat 9/6/13 10:36 AM
  */
-public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse> {
+public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse, Core.Type<User, Core.Type<Document, Core.Type.End>>> {
 
     @Override
-    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext dataContext) {
+    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext<? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> dataContext) {
         try {
-            DataAccessor.Transaction<User> transaction = dataContext.getUserDataAccessor().beginTransaction();
+            DataAccessor<User> usersUserDataAccessor = dataContext.getDataAccessor().get();
+            DataAccessor.Transaction<User> transaction = usersUserDataAccessor.beginTransaction();
             try {
                 if (transaction.getAll().filter((user) -> request.getPreferredUsername().equals(user.getUsername())).count() > 0)
                     throw new Exception();
@@ -36,12 +39,12 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
     }
 
     @Override
-    public void onLoad(@NotNull Core<?> core) {
+    public void onLoad(@NotNull Core<?, ? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> core) {
 
     }
 
     @Override
-    public void onUnload(@NotNull Core<?> core) {
+    public void onUnload(@NotNull Core<?, ? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> core) {
 
     }
 

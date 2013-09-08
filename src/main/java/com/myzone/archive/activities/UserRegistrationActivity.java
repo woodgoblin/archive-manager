@@ -2,6 +2,7 @@ package com.myzone.archive.activities;
 
 import com.myzone.archive.core.Activity;
 import com.myzone.archive.core.Core;
+import com.myzone.archive.model.Document;
 import com.myzone.archive.model.User;
 import com.myzone.archive.services.UserRegistrationService;
 import javafx.event.EventHandler;
@@ -30,11 +31,11 @@ import java.util.function.Function;
  */
 public class UserRegistrationActivity implements Activity<Node> {
 
-    private final Core<? super Node> core;
+    private final Core<? super Node, Core.Type<User, Core.Type<Document, Core.Type.End>>> core;
     private final Node rootNode;
     private final UserRegistrationService registrationService;
 
-    public UserRegistrationActivity(Core<? super Node> core) {
+    public UserRegistrationActivity(Core<? super Node, Core.Type<User, Core.Type<Document, Core.Type.End>>> core) {
         this.core = core;
         this.rootNode = constructForm();
         this.registrationService = new UserRegistrationService();
