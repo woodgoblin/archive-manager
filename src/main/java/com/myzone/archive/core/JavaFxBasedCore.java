@@ -3,45 +3,47 @@ package com.myzone.archive.core;
 import com.myzone.archive.data.DataAccessor;
 import com.myzone.archive.model.Document;
 import com.myzone.archive.model.User;
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static javafx.application.Platform.isFxApplicationThread;
+import static javafx.application.Platform.runLater;
 
 /**
  * @author myzone
  * @date 9/6/13 11:51 AM
  */
-public class JavaFxBasedCore implements Core<Node> {
+public class JavaFxBasedCore extends GreenTreadCore<Node> {
 
-    private final Pane rootNode;
     private final ApplicationGraphicsContext<Node> applicationGraphicsContext;
+    private final ApplicationDataContext applicationDataContext;
 
-    public JavaFxBasedCore(Pane rootNode) {
-        this.rootNode = rootNode;
+    public JavaFxBasedCore(@NotNull Pane rootNode) {
         this.applicationGraphicsContext = new ApplicationGraphicsContext<Node>() {
 
             @Override
-            public void bind(Node node) {
+            public void bind(@NotNull Node node) {
                 rootNode.getChildren().add(node);
             }
 
             @Override
-            public void unbind(Node node) {
+            public void unbind(@NotNull Node node) {
                 rootNode.getChildren().remove(node);
             }
 
         };
-    }
+        applicationDataContext = new ApplicationDataContext() {
 
-    Set<User> users = new HashSet<>();
+            Set<User> users = new HashSet<>();
 
-    @Override
-    public <A, R> R processRequest(Service<? super A, ? extends R> service, A request) {
-        return service.process(request, new ApplicationDataContext() {
-
+            @NotNull
             @Override
             public DataAccessor<User> getUserDataAccessor() {
                 return () -> new DataAccessor.Transaction<User>() {
@@ -78,31 +80,41 @@ public class JavaFxBasedCore implements Core<Node> {
                 };
             }
 
+            @NotNull
             @Override
             public DataAccessor<Document> getDocumentDataAccessor() {
                 return null;  //To change body of implemented methods use File | Settings | File Templates.
             }
-        });
+
+        };
+    }
+
+    @NotNull
+    @Override
+    protected ApplicationGraphicsContext<Node> getGraphicsContext() {
+        return applicationGraphicsContext;
+    }
+
+    @NotNull
+    @Override
+    protected ApplicationDataContext getDataContext() {
+        return applicationDataContext;
     }
 
     @Override
-    public void loadActivity(Activity<? extends Node> activity) {
-        activity.onLoad(applicationGraphicsContext);
+    protected boolean isUiThread() {
+        return isFxApplicationThread();
     }
 
     @Override
-    public void unloadActivity(Activity<? extends Node> activity) {
-        activity.onUnload(applicationGraphicsContext);
-    }
+    protected void runOnUiThread(@NotNull Runnable runnable) {
+        boolean fxApplicationThread = isFxApplicationThread();
 
-    @Override
-    public void loadService(Service<?, ?> service) {
-
-    }
-
-    @Override
-    public void unloadService(Service<?, ?> service) {
-
+        if (fxApplicationThread) {
+            runnable.run();
+        } else {
+            runLater(runnable);
+        }
     }
 
 }

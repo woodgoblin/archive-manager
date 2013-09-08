@@ -1,18 +1,21 @@
 package com.myzone.archive.services;
 
 import com.myzone.archive.core.Core;
-import com.myzone.archive.core.Service;
+import com.myzone.archive.core.DataService;
 import com.myzone.archive.data.DataAccessor;
 import com.myzone.archive.model.User;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
 
 /**
  * @author myzone
  * @dat 9/6/13 10:36 AM
  */
-public class UserRegistrationService implements Service<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse> {
+public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse> {
 
     @Override
-    public UserRegistrationResponse process(UserRegistrationRequest request, Core.ApplicationDataContext dataContext) {
+    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext dataContext) {
         try {
             DataAccessor.Transaction<User> transaction = dataContext.getUserDataAccessor().beginTransaction();
             try {
@@ -23,13 +26,23 @@ public class UserRegistrationService implements Service<UserRegistrationService.
                 transaction.save(newUser);
                 transaction.commit();
 
-                return () -> newUser;
+                callback.apply((UserRegistrationResponse) () -> newUser);
             } finally {
                 transaction.rollback();
             }
         } catch (Exception e) {
-            return () -> null;
+            callback.apply((UserRegistrationResponse) () -> null);
         }
+    }
+
+    @Override
+    public void onLoad(@NotNull Core<?> core) {
+
+    }
+
+    @Override
+    public void onUnload(@NotNull Core<?> core) {
+
     }
 
     public static interface UserRegistrationRequest {

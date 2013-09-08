@@ -3,6 +3,10 @@ package com.myzone.archive.core;
 import com.myzone.archive.data.DataAccessor;
 import com.myzone.archive.model.Document;
 import com.myzone.archive.model.User;
+import com.myzone.utils.ImmutableTuple;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
 
 /**
  * @author myzone
@@ -10,28 +14,30 @@ import com.myzone.archive.model.User;
  */
 public interface Core<N> {
 
-    public <A, R> R processRequest(Service<? super A, ? extends R> service, A request);
+    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
 
-    public void loadActivity(Activity<? extends N> activity);
+    public void loadActivity(@NotNull Activity<? extends N> activity);
 
-    public void unloadActivity(Activity<? extends N> activity);
+    public void unloadActivity(@NotNull Activity<? extends N> activity);
 
-    public void loadService(Service<?, ?> service);
+    public void loadService(@NotNull DataService<?, ?> service);
 
-    public void unloadService(Service<?, ?> service);
+    public void unloadService(@NotNull DataService<?, ?> service);
 
     public interface ApplicationGraphicsContext<N> {
 
-        void bind(N node);
+        void bind(@NotNull N node);
 
-        void unbind(N node);
+        void unbind(@NotNull N node);
 
     }
 
     public interface ApplicationDataContext {
 
+        @NotNull
         DataAccessor<User> getUserDataAccessor();
 
+        @NotNull
         DataAccessor<Document> getDocumentDataAccessor();
 
     }

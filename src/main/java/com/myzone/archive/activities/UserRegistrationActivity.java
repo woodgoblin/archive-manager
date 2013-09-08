@@ -4,7 +4,6 @@ import com.myzone.archive.core.Activity;
 import com.myzone.archive.core.Core;
 import com.myzone.archive.model.User;
 import com.myzone.archive.services.UserRegistrationService;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,6 +20,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
@@ -30,26 +30,24 @@ import java.util.function.Function;
  */
 public class UserRegistrationActivity implements Activity<Node> {
 
-    private final Core<Node> core;
+    private final Core<? super Node> core;
     private final Node rootNode;
+    private final UserRegistrationService registrationService;
 
-    private UserRegistrationService registrationService;
-
-    public UserRegistrationActivity(Core<Node> core) {
+    public UserRegistrationActivity(Core<? super Node> core) {
         this.core = core;
         this.rootNode = constructForm();
+        this.registrationService = new UserRegistrationService();
     }
 
     @Override
-    public void onLoad(Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
+    public void onLoad(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
         graphicsContext.bind(rootNode);
-
-        registrationService = new UserRegistrationService();
         core.loadService(registrationService);
     }
 
     @Override
-    public void onUnload(Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
+    public void onUnload(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
         graphicsContext.unbind(rootNode);
         core.unloadService(registrationService);
     }
@@ -100,6 +98,8 @@ public class UserRegistrationActivity implements Activity<Node> {
                             actionText.setText("Registration has been failed");
                         }
 
+                        btn.setDisable(true);
+
                         return null;
                     }
             );
@@ -127,7 +127,7 @@ public class UserRegistrationActivity implements Activity<Node> {
     }
 
     protected void register(String username, String password, Function<UserRegistrationService.UserRegistrationResponse, Void> callback) {
-        callback.apply(core.processRequest(registrationService, new UserRegistrationService.UserRegistrationRequest() {
+        core.processRequest(registrationService, new UserRegistrationService.UserRegistrationRequest() {
             @Override
             public String getPreferredUsername() {
                 return username;
@@ -137,7 +137,7 @@ public class UserRegistrationActivity implements Activity<Node> {
             public String getPreferredPassword() {
                 return password;
             }
-        }));
+        }, callback);
     }
 
 }

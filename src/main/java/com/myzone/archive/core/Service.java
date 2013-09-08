@@ -1,11 +1,16 @@
 package com.myzone.archive.core;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
- * @author myzone
- * @date 9/6/13 10:21 AM
+ * User: myzone
+ * Date: 9/8/13
+ * Time: 3:54 PM
  */
 public interface Service<A, R> {
 
-    R process(A request, Core.ApplicationDataContext dataContext);
+    void onLoad(@NotNull Core<?> core);
+
+    void onUnload(@NotNull Core<?> core);
 
 }

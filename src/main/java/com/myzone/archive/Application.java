@@ -4,10 +4,13 @@ import com.myzone.archive.activities.UserRegistrationActivity;
 import com.myzone.archive.core.Activity;
 import com.myzone.archive.core.Core;
 import com.myzone.archive.core.JavaFxBasedCore;
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
+
+import static javafx.application.Platform.runLater;
 
 /**
  * @author myzone
@@ -23,10 +26,9 @@ public class Application extends javafx.application.Application {
 
         JavaFxBasedCore core = new JavaFxBasedCore(rootPane);
         UserRegistrationActivity userRegistrationActivity = new UserRegistrationActivity(core);
-
         core.loadActivity(userRegistrationActivity);
 
-        stage.show();
+        runLater(stage::show);
     }
 
     public static void main(String[] args) {
