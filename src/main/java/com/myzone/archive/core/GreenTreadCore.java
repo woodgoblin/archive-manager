@@ -4,10 +4,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static com.google.common.collect.ImmutableList.copyOf;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 /**
@@ -17,17 +15,15 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, D> {
 
     private final Map<Service<?, ?>, Function<Runnable, Void>> executeOnFunctions;
-    private final List<ExecutorService> executorsMap;
-
-    private final AtomicInteger serviceLoadCounter;
+    private final ExecutorService executor;
 
     protected GreenTreadCore() {
         executeOnFunctions = new ConcurrentHashMap<>();
-        executorsMap = copyOf(createExecutorsMap());
-        serviceLoadCounter = new AtomicInteger(0);
+        executor = new ForkJoinPool();
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback) {
         Function<Runnable, Void> executeOn = executeOnFunctions.getOrDefault(service, (arg) -> {
             throw new RuntimeException("Unknown service " + service);
@@ -36,11 +32,11 @@ public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, 
         Function<R, Void> finalCallback = isUiThread() ? toUiCallback(callback) : callback;
 
         if (service instanceof PureService) {
-            PureService pureService = (PureService) service;
+            PureService<? super A, ? extends R> pureService = (PureService<? super A, ? extends R>) service;
 
             executeOn.apply(() -> pureService.process(request, finalCallback));
         } else if (service instanceof DataService) {
-            DataService dataService = (DataService) service;
+            DataService<? super A, ? extends R, ? super D> dataService = (DataService<? super A, ? extends R, ? super D>) service;
 
             executeOn.apply(() -> dataService.process(request, finalCallback, getDataContext()));
         }
@@ -58,9 +54,6 @@ public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, 
 
     @Override
     public void loadService(@NotNull PureService<?, ?> service) {
-        int i = serviceLoadCounter.incrementAndGet();
-        ExecutorService executor = executorsMap.get(i % executorsMap.size());
-
         executeOnFunctions.putIfAbsent(service, runnable -> {
             executor.submit(runnable);
 
@@ -79,11 +72,10 @@ public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, 
 
     @Override
     public void loadService(@NotNull DataService<?, ?, ? super D> service) {
-        int i = serviceLoadCounter.incrementAndGet();
-        ExecutorService executor = newSingleThreadExecutor();
+        ExecutorService privateExecutor = newSingleThreadExecutor();
 
-        executeOnFunctions.putIfAbsent(service, runnable -> {
-            executor.submit(runnable);
+        executeOnFunctions.put(service, runnable -> {
+            privateExecutor.submit(runnable);
 
             return null;
         });
@@ -99,26 +91,14 @@ public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, 
     }
 
     @NotNull
-    protected abstract ApplicationGraphicsContext<N> getGraphicsContext();
+    protected abstract ApplicationGraphicsContext<? super N> getGraphicsContext();
 
     @NotNull
-    protected abstract ApplicationDataContext getDataContext();
+    protected abstract ApplicationDataContext<? extends D> getDataContext();
 
     protected abstract boolean isUiThread();
 
     protected abstract void runOnUiThread(@NotNull Runnable runnable);
-
-    @NotNull
-    protected ArrayList<ExecutorService> createExecutorsMap() {
-        int cores = Runtime.getRuntime().availableProcessors();
-        ArrayList<ExecutorService> result = new ArrayList<>(cores);
-
-        for (int i = 0; i < cores; i++) {
-            result.add(newSingleThreadExecutor());
-        }
-
-        return result;
-    }
 
     @NotNull
     protected <T> Function<T, Void> toUiCallback(@NotNull Function<T, Void> callback) {
