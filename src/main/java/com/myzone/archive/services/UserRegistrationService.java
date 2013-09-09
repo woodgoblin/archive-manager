@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 /**
  * @author myzone
- * @dat 9/6/13 10:36 AM
+ * @date 9/6/13 10:36 AM
  */
 public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse, Core.Type<User, Core.Type<Document, Core.Type.End>>> {
 

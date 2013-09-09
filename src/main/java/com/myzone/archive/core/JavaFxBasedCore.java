@@ -1,6 +1,7 @@
 package com.myzone.archive.core;
 
 import com.myzone.archive.data.DataAccessor;
+import com.myzone.archive.data.InMemoryDataAccessor;
 import com.myzone.archive.model.Document;
 import com.myzone.archive.model.User;
 import com.myzone.utils.ImmutableTuple;
@@ -47,44 +48,11 @@ public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.T
 
             @NotNull
             @Override
-            public Type<User, Type<Document, Type.End>> getDataAccessor() {
+            public Type<User, Type<Document, Type.End>> getDataAccessors() {
                 return new RecursiveType<User, Type<Document, Type.End>>(
-                        () -> new DataAccessor.Transaction<User>() {
-
-                            Set<User> tmp = new HashSet<>(users);
-
-                            @Override
-                            public Stream<User> getAll() throws DataAccessor.DataAccessException {
-                                return tmp.stream();
-                            }
-
-                            @Override
-                            public void save(User o) throws DataAccessor.DataAccessException {
-                                tmp.add(o);
-                            }
-
-                            @Override
-                            public void update(User o) throws DataAccessor.DataAccessException {
-                            }
-
-                            @Override
-                            public void delete(User o) throws DataAccessor.DataAccessException {
-                                tmp.remove(o);
-                            }
-
-                            @Override
-                            public void commit() throws DataAccessor.DataModificationException {
-                                users = tmp;
-                            }
-
-                            @Override
-                            public void rollback() {
-                            }
-                        },
+                        new InMemoryDataAccessor<>(User.class),
                         new RecursiveType<>(
-                                () -> {
-                                    throw new UnsupportedOperationException();
-                                },
+                                new InMemoryDataAccessor<>(Document.class),
                                 Type.End.END
                         )
                 );
@@ -100,7 +68,7 @@ public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.T
 
     @NotNull
     @Override
-    protected ApplicationDataContext getDataContext() {
+    protected ApplicationDataContext<Type<User, Type<Document, Type.End>>> getDataContext() {
         return applicationDataContext;
     }
 

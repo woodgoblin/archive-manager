@@ -39,7 +39,7 @@ public interface Core<N, D extends Core.Type> {
     public interface ApplicationDataContext<D extends Type> {
 
         @NotNull
-        D getDataAccessor();
+        D getDataAccessors();
 
     }
 

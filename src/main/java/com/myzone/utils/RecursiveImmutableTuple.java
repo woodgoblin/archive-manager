@@ -3,9 +3,8 @@ package com.myzone.utils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * User: myzone
- * Date: 9/8/13
- * Time: 4:46 PM
+ * @author myzone
+ * @date 9/8/13 4:46 PM
  */
 public class RecursiveImmutableTuple<D, T extends ImmutableTuple> implements ImmutableTuple<D, T> {
 

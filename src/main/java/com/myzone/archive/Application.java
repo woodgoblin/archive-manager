@@ -1,14 +1,7 @@
 package com.myzone.archive;
 
 import com.myzone.archive.activities.UserRegistrationActivity;
-import com.myzone.archive.core.Activity;
-import com.myzone.archive.core.Core;
 import com.myzone.archive.core.JavaFxBasedCore;
-import com.myzone.archive.model.Document;
-import com.myzone.archive.model.User;
-import com.myzone.utils.ImmutableTuple;
-import javafx.application.Platform;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -31,6 +24,7 @@ public class Application extends javafx.application.Application {
         UserRegistrationActivity userRegistrationActivity = new UserRegistrationActivity(core);
         core.loadActivity(userRegistrationActivity);
 
+        stage.setOnCloseRequest(e -> System.exit(0));
         runLater(stage::show);
     }
 
