@@ -1,6 +1,5 @@
 package com.myzone.archive.data;
 
-import java.io.Closeable;
 import java.util.stream.Stream;
 
 /**
@@ -13,21 +12,17 @@ public interface DataAccessor<T> {
 
     public interface Transaction<T> {
 
-        Stream<T> getAll() throws DataAccessException;
+        Stream<T> getAll();
 
-        void save(T o) throws DataAccessException;
+        void save(T o);
 
-        void update(T o) throws DataAccessException;
+        void update(T o);
 
-        void delete(T o) throws DataAccessException;
+        void delete(T o);
 
         void commit() throws DataModificationException;
 
         void rollback();
-
-    }
-
-    public class DataAccessException extends Exception {
 
     }
 

@@ -1,11 +1,16 @@
 package com.myzone.archive.data;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
 /**
@@ -18,7 +23,7 @@ public class InMemoryDataAccessorTest {
 
     @Before
     public void setUp() throws Exception {
-        accessor = new InMemoryDataAccessor<>(new File("ads"), MutablePoint.class);
+        accessor = new InMemoryDataAccessor<>(MutablePoint.class);
 
         DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
         try {
@@ -28,6 +33,8 @@ public class InMemoryDataAccessorTest {
 
             transaction.commit();
         } catch (Exception e) {
+            e.printStackTrace();
+
             transaction.rollback();
 
             throw e;
@@ -87,6 +94,34 @@ public class InMemoryDataAccessorTest {
         transaction = accessor.beginTransaction();
         assertEquals(1, transaction.getAll().filter(point -> point.getX() == 0).count());
         transaction.rollback();
+    }
+
+    @Test(expected = DataAccessor.DataModificationException.class)
+    public void testRace() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        DataAccessor.Transaction<MutablePoint> transaction1 = executor.submit(() -> {
+            DataAccessor.Transaction<MutablePoint> innerTransaction = accessor.beginTransaction();
+            MutablePoint innerMutablePoint = innerTransaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+            assertNotNull(innerMutablePoint);
+            innerMutablePoint.setX(10);
+            innerTransaction.update(innerMutablePoint);
+            return innerTransaction;
+        }).get();
+
+        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
+        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        assertNotNull(mutablePoint);
+        assertEquals(0, mutablePoint.getX());
+        mutablePoint.setX(100);
+
+        executor.submit(() -> {
+            transaction1.commit();
+            return null;
+        }).get();
+
+        transaction.update(mutablePoint);
+        transaction.commit();
     }
 
     private static class MutablePoint extends InMemoryDataAccessor.DataObject implements Serializable {
