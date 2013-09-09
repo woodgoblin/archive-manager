@@ -1,8 +1,6 @@
-package com.myzone.archive.core;
+package com.myzone.archivemanager.core;
 
-import com.myzone.archive.data.DataAccessor;
-import com.myzone.archive.model.Document;
-import com.myzone.archive.model.User;
+import com.myzone.archivemanager.data.DataAccessor;
 import com.myzone.utils.ImmutableTuple;
 import org.jetbrains.annotations.NotNull;
 

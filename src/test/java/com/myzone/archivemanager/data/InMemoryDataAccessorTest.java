@@ -1,14 +1,11 @@
-package com.myzone.archive.data;
+package com.myzone.archivemanager.data;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;

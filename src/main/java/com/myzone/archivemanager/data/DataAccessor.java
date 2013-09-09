@@ -1,4 +1,4 @@
-package com.myzone.archive.data;
+package com.myzone.archivemanager.data;
 
 import java.util.stream.Stream;
 

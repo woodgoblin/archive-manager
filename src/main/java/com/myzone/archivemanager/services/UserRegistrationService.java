@@ -1,10 +1,10 @@
-package com.myzone.archive.services;
+package com.myzone.archivemanager.services;
 
-import com.myzone.archive.core.Core;
-import com.myzone.archive.core.DataService;
-import com.myzone.archive.data.DataAccessor;
-import com.myzone.archive.model.Document;
-import com.myzone.archive.model.User;
+import com.myzone.archivemanager.core.Core;
+import com.myzone.archivemanager.core.DataService;
+import com.myzone.archivemanager.data.DataAccessor;
+import com.myzone.archivemanager.model.Document;
+import com.myzone.archivemanager.model.User;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;

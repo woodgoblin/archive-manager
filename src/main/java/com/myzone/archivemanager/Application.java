@@ -1,7 +1,7 @@
-package com.myzone.archive;
+package com.myzone.archivemanager;
 
-import com.myzone.archive.activities.UserRegistrationActivity;
-import com.myzone.archive.core.JavaFxBasedCore;
+import com.myzone.archivemanager.activities.UserRegistrationActivity;
+import com.myzone.archivemanager.core.JavaFxBasedCore;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;

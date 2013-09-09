@@ -1,4 +1,4 @@
-package com.myzone.archive.model;
+package com.myzone.archivemanager.model;
 
 /**
  * @author myzone

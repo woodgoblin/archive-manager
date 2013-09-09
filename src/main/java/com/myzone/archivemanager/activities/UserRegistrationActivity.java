@@ -1,10 +1,10 @@
-package com.myzone.archive.activities;
+package com.myzone.archivemanager.activities;
 
-import com.myzone.archive.core.Activity;
-import com.myzone.archive.core.Core;
-import com.myzone.archive.model.Document;
-import com.myzone.archive.model.User;
-import com.myzone.archive.services.UserRegistrationService;
+import com.myzone.archivemanager.core.Activity;
+import com.myzone.archivemanager.core.Core;
+import com.myzone.archivemanager.model.Document;
+import com.myzone.archivemanager.model.User;
+import com.myzone.archivemanager.services.UserRegistrationService;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

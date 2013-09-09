@@ -1,4 +1,4 @@
-package com.myzone.archive.core;
+package com.myzone.archivemanager.core;
 
 /**
  * @author myzone

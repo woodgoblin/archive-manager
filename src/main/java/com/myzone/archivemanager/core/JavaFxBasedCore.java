@@ -1,20 +1,16 @@
-package com.myzone.archive.core;
+package com.myzone.archivemanager.core;
 
-import com.myzone.archive.data.DataAccessor;
-import com.myzone.archive.data.InMemoryDataAccessor;
-import com.myzone.archive.model.Document;
-import com.myzone.archive.model.User;
-import com.myzone.utils.ImmutableTuple;
+import com.myzone.archivemanager.data.DataAccessor;
+import com.myzone.archivemanager.data.InMemoryDataAccessor;
+import com.myzone.archivemanager.model.Document;
+import com.myzone.archivemanager.model.User;
 import com.myzone.utils.RecursiveImmutableTuple;
-import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static javafx.application.Platform.isFxApplicationThread;
 import static javafx.application.Platform.runLater;
