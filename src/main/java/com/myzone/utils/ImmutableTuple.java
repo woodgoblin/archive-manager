@@ -13,7 +13,7 @@ public interface ImmutableTuple<D, T extends ImmutableTuple> {
     @NotNull
     T next();
 
-    public static enum End implements ImmutableTuple {
+    enum End implements ImmutableTuple<Object, End> {
 
         END;
 
@@ -24,8 +24,8 @@ public interface ImmutableTuple<D, T extends ImmutableTuple> {
 
         @NotNull
         @Override
-        public ImmutableTuple next() {
-            return this;
+        public End next() {
+            return null;
         }
 
     }

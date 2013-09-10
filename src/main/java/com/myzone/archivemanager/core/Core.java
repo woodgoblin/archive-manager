@@ -10,7 +10,7 @@ import java.util.function.Function;
  * @author myzone
  * @date 9/6/13 11:47 AM
  */
-public interface Core<N, D extends Core.Type> {
+public interface Core<N, D extends Core.DataProvider> {
 
     public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
 
@@ -34,27 +34,27 @@ public interface Core<N, D extends Core.Type> {
 
     }
 
-    public interface ApplicationDataContext<D extends Type> {
+    public interface ApplicationDataContext<D extends DataProvider> {
 
         @NotNull
-        D getDataAccessors();
+        D getDataProvider();
 
     }
 
-    public interface Type<D, T extends Type> extends ImmutableTuple<DataAccessor<D>, T> {
+    interface DataProvider<D, T extends DataProvider> extends ImmutableTuple<DataAccessor<D>, T> {
 
-        enum End implements Type {
+        enum DataProviderEnd implements DataProvider<Object, DataProviderEnd> {
 
             END;
 
             @Override
-            public Object get() {
+            public DataAccessor<Object> get() {
                 return null;
             }
 
             @NotNull
             @Override
-            public ImmutableTuple next() {
+            public DataProviderEnd next() {
                 return this;
             }
 

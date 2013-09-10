@@ -13,12 +13,12 @@ import java.util.function.Function;
  * @author myzone
  * @date 9/6/13 10:36 AM
  */
-public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse, Core.Type<User, Core.Type<Document, Core.Type.End>>> {
+public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse, Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> {
 
     @Override
-    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext<? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> dataContext) {
+    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext<? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> dataContext) {
         try {
-            DataAccessor<User> usersUserDataAccessor = dataContext.getDataAccessors().get();
+            DataAccessor<User> usersUserDataAccessor = dataContext.getDataProvider().get();
             DataAccessor.Transaction<User> transaction = usersUserDataAccessor.beginTransaction();
             try {
                 if (transaction.getAll().filter((user) -> request.getPreferredUsername().equals(user.getUsername())).count() > 0)
@@ -38,12 +38,12 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
     }
 
     @Override
-    public void onLoad(@NotNull Core<?, ? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> core) {
+    public void onLoad(@NotNull Core<?, ? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> core) {
 
     }
 
     @Override
-    public void onUnload(@NotNull Core<?, ? extends Core.Type<User, Core.Type<Document, Core.Type.End>>> core) {
+    public void onUnload(@NotNull Core<?, ? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> core) {
 
     }
 

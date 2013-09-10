@@ -19,10 +19,10 @@ import static javafx.application.Platform.runLater;
  * @author myzone
  * @date 9/6/13 11:51 AM
  */
-public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.Type<Document, Core.Type.End>>> {
+public class JavaFxBasedCore extends GreenTreadCore<Node, Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> {
 
     private final ApplicationGraphicsContext<Node> applicationGraphicsContext;
-    private final ApplicationDataContext<Core.Type<User, Core.Type<Document, Core.Type.End>>> applicationDataContext;
+    private final ApplicationDataContext<DataProvider<User, DataProvider<Document, DataProvider.DataProviderEnd>>> applicationDataContext;
 
     public JavaFxBasedCore(@NotNull Pane rootNode) {
         this.applicationGraphicsContext = new ApplicationGraphicsContext<Node>() {
@@ -38,18 +38,18 @@ public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.T
             }
 
         };
-        applicationDataContext = new ApplicationDataContext<Type<User, Type<Document, Type.End>>>() {
+        applicationDataContext = new ApplicationDataContext<DataProvider<User, DataProvider<Document, DataProvider.DataProviderEnd>>>() {
 
             private Set<User> users = new HashSet<>();
 
             @NotNull
             @Override
-            public Type<User, Type<Document, Type.End>> getDataAccessors() {
-                return new RecursiveType<User, Type<Document, Type.End>>(
+            public DataProvider<User, DataProvider<Document, DataProvider.DataProviderEnd>> getDataProvider() {
+                return new RecursiveDataProvider<User, DataProvider<Document, DataProvider.DataProviderEnd>>(
                         new InMemoryDataAccessor<>(User.class),
-                        new RecursiveType<>(
+                        new RecursiveDataProvider<>(
                                 new InMemoryDataAccessor<>(Document.class),
-                                Type.End.END
+                                DataProvider.DataProviderEnd.END
                         )
                 );
             }
@@ -64,7 +64,7 @@ public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.T
 
     @NotNull
     @Override
-    protected ApplicationDataContext<Type<User, Type<Document, Type.End>>> getDataContext() {
+    protected ApplicationDataContext<DataProvider<User, DataProvider<Document, DataProvider.DataProviderEnd>>> getDataContext() {
         return applicationDataContext;
     }
 
@@ -84,9 +84,9 @@ public class JavaFxBasedCore extends GreenTreadCore<Node, Core.Type<User, Core.T
         }
     }
 
-    class RecursiveType<D, T extends Type> extends RecursiveImmutableTuple<DataAccessor<D>, T> implements Type<D, T> {
+    class RecursiveDataProvider<D, T extends DataProvider> extends RecursiveImmutableTuple<DataAccessor<D>, T> implements DataProvider<D, T> {
 
-        public RecursiveType(DataAccessor<D> data, T next) {
+        public RecursiveDataProvider(DataAccessor<D> data, T next) {
             super(data, next);
         }
 

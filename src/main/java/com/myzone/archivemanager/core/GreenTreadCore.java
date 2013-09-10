@@ -12,7 +12,7 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  * @author myzone
  * @date 9/8/13 11:42 AM
  */
-public abstract class GreenTreadCore<N, D extends Core.Type> implements Core<N, D> {
+public abstract class GreenTreadCore<N, D extends Core.DataProvider> implements Core<N, D> {
 
     private final Map<Service<?, ?>, Function<Runnable, Void>> executeOnFunctions;
     private final ExecutorService executor;
