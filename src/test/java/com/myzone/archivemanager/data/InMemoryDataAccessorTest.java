@@ -4,10 +4,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static java.lang.Thread.sleep;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
 
 /**
@@ -178,6 +182,26 @@ public class InMemoryDataAccessorTest {
         DataAccessor.Transaction<MutablePoint> transaction5 = accessor2.beginTransaction();
         assertEquals(100, mutablePoint.getY());
         transaction5.rollback();
+    }
+
+    @Test
+    public void testContinue() throws Exception {
+        MutablePoint mutablePoint1 = new MutablePoint(10, 10);
+        MutablePoint mutablePoint2 = new MutablePoint(14, 15);
+
+        accessor.beginTransaction()
+                .save(mutablePoint1)
+                .and()
+                .save(mutablePoint2)
+                .and()
+                .commit();
+
+        assertTrue(
+                accessor.beginTransaction()
+                        .getAll()
+                        .collect(toSet())
+                        .containsAll(asList(mutablePoint1, mutablePoint2))
+        );
     }
 
     private static class MutablePoint extends InMemoryDataAccessor.DataObject implements Serializable {

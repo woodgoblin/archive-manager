@@ -14,17 +14,24 @@ public interface DataAccessor<T> {
 
         Stream<T> getAll();
 
-        void save(T o);
+        Continue<T> save(T o);
 
-        void update(T o);
+        Continue<T> update(T o);
 
-        void delete(T o);
+        Continue<T> delete(T o);
 
         void commit() throws DataModificationException;
 
         void rollback();
 
     }
+
+    interface Continue<T> {
+
+        Transaction<T> and();
+
+    }
+
 
     public class DataModificationException extends Exception {
 

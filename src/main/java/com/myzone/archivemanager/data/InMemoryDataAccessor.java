@@ -99,10 +99,12 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
     protected class InMemoryTransaction implements Transaction<T> {
 
+        private final Continue<T> defaultContinue;
         private final IdentityHashMap<T, Boolean> updated;
         private final IdentityHashMap<T, Integer> localCache;
 
         public InMemoryTransaction() {
+            defaultContinue = () -> this;
             updated = new IdentityHashMap<>();
 
             lock.readLock().lock();
@@ -128,21 +130,27 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
         }
 
         @Override
-        public void save(T o) {
+        public Continue<T> save(T o) {
             localCache.put(o, 0);
             updated.put(o, false);
+
+            return defaultContinue;
         }
 
         @Override
-        public void update(T o) {
+        public Continue<T> update(T o) {
             localCache.put(o, localCache.get(o) + 1);
             updated.put(o, true);
+
+            return defaultContinue;
         }
 
         @Override
-        public void delete(T o) {
+        public Continue<T> delete(T o) {
             localCache.remove(o);
             updated.put(o, false);
+
+            return defaultContinue;
         }
 
         @Override
