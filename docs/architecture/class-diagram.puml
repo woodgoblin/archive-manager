@@ -1,8 +1,10 @@
 @startuml
 
-package Core {
+package CoreData {
 
-    class Application {
+    interface Core<T> {
+        +process(service, request, callback)
+
         +loadActivity(activity)
         +unloadActivity(activity)
 
@@ -10,20 +12,32 @@ package Core {
         +unloadService(service)
     }
 
-    class ApplicationContext {
+    interface GraphicsContext<N> {
+        +bind(rootNode)
+        +unbind(rootNode)
+    }
+
+    interface ApplicationContext {
         +getDocumentsDAO(): DataAccessObject<Document>
         +getUsersDAO(): DataAccessObject<User>
     }
 
-    interface Activity {
-        +onLoad(GraphicsContext graphicContext)
-        +onPause(GraphicsContext graphicContext)
-        +onResume(GraphicsContext graphicContext)
-        +onUnload(GraphicsContext graphicContext)
+    interface Activity<N> {
+        +onLoad(graphicContext)
+        +onUnload(graphicContext)
     }
 
     interface Service<A, R> {
-        +process(T request, ApplicationContext context): R
+        +onLoad(core)
+        +onUnload(core)
+    }
+
+    interface PureService<A, R> {
+        +process(request, callback)
+    }
+
+    interface DataService<A, R> {
+        +process(request, callback, dataContext)
     }
 
 }
@@ -37,19 +51,13 @@ package Utils {
         }
 
         class Transaction<T> {
-            +get(): Stream<T>
-            +<F> get(FieldAccessor<F> fieldAccessor, F key): Stream<T>
-            +<F> get(UniqueFieldAccessor<F> fieldAccessor, F key): T
-            +update(T oldObject, T newObject): void
+            +getAll(): Stream<T>
+            +save(T object): void
+            +update(T object): void
+            +delete(T object): void
         }
 
     }
-
-    class GraphicsContext {
-        +bind(Window window)
-        +unbind(Window window)
-    }
-
 }
 
 package Model {
@@ -64,8 +72,8 @@ package Model {
 
 }
 
-Application --> Activity
-Application --> Service
+Core --> Activity
+Core --> Service
 Activity --> GraphicsContext
 Service --> ApplicationContext
 ApplicationContext --> DataAccessObject

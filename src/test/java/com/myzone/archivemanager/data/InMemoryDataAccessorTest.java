@@ -150,6 +150,36 @@ public class InMemoryDataAccessorTest {
         transaction1.commit();
     }
 
+    @Test
+    public void testManyAccessors() throws Exception {
+        DataAccessor<MutablePoint> accessor1 = new InMemoryDataAccessor<>(MutablePoint.class);
+        DataAccessor<MutablePoint> accessor2 = new InMemoryDataAccessor<>(MutablePoint.class);
+
+        MutablePoint mutablePoint = new MutablePoint(10, 10);
+
+        DataAccessor.Transaction<MutablePoint> transaction1 = accessor1.beginTransaction();
+        transaction1.save(mutablePoint);
+        transaction1.commit();
+
+        DataAccessor.Transaction<MutablePoint> transaction2 = accessor2.beginTransaction();
+        transaction2.save(mutablePoint);
+        transaction2.commit();
+
+        DataAccessor.Transaction<MutablePoint> transaction3 = accessor1.beginTransaction();
+        mutablePoint.setY(100);
+        transaction3.update(mutablePoint);
+
+        DataAccessor.Transaction<MutablePoint> transaction4 = accessor2.beginTransaction();
+        assertEquals(10, mutablePoint.getY());
+        transaction4.rollback();
+
+        transaction3.commit();
+
+        DataAccessor.Transaction<MutablePoint> transaction5 = accessor2.beginTransaction();
+        assertEquals(100, mutablePoint.getY());
+        transaction5.rollback();
+    }
+
     private static class MutablePoint extends InMemoryDataAccessor.DataObject implements Serializable {
 
         private int x;
