@@ -58,94 +58,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
     @Override
     public Transaction<T> beginTransaction() {
-        return new Transaction<T>() {
-
-            private final IdentityHashMap<T, Boolean> updated;
-            private final IdentityHashMap<T, Integer> localCache;
-
-            /* Transaction */ {
-                updated = new IdentityHashMap<>();
-
-                lock.readLock().lock();
-                try {
-                    localCache = new IdentityHashMap<>(cache);
-
-                    IdentityHashMap<T, T> identities = getIdentities(clazz);
-                    for (T o : cache.keySet()) {
-                        T copy = newInstance(clazz);
-
-                        merge(o, copy);
-
-                        identities.put(o, copy);
-                    }
-                } finally {
-                    lock.readLock().unlock();
-                }
-            }
-
-            @Override
-            public Stream<T> getAll() {
-                return localCache.keySet().stream();
-            }
-
-            @Override
-            public void save(T o) {
-                localCache.put(o, 0);
-                updated.put(o, false);
-            }
-
-            @Override
-            public void update(T o) {
-                localCache.put(o, localCache.get(o) + 1);
-                updated.put(o, true);
-            }
-
-            @Override
-            public void delete(T o) {
-                localCache.remove(o);
-                updated.put(o, false);
-            }
-
-            @Override
-            public void commit() throws DataModificationException {
-                lock.writeLock().lock();
-
-                try {
-                    for(T updatedObject : updated.keySet()) {
-                        Integer sharedRevision = cache.get(updatedObject);
-                        Integer localRevision  = localCache.get(updatedObject);
-
-                        if (localRevision == null) {
-                            if (sharedRevision == null) {
-                                throw new DataModificationException(); // updatedObject has been removed before
-                            }
-                        } else {
-                            if (sharedRevision != null && localRevision <= sharedRevision) {
-                                throw new DataModificationException(); // updatedObject has been updated before
-                            }
-                        }
-                    }
-
-                    IdentityHashMap<T, T> identities = getIdentities(clazz);
-                    updated.forEach((updatedObject, wasUpdated) -> {
-                        if (wasUpdated) {
-                            merge(identities.get(updatedObject), updatedObject);
-                        }
-                    });
-                    identities.clear();
-
-                    cache = localCache;
-                } finally {
-                    lock.writeLock().unlock();
-                }
-            }
-
-            @Override
-            public void rollback() {
-                getIdentities(clazz).clear();
-            }
-
-        };
+        return new InMemoryTransaction();
     }
 
     @SuppressWarnings("unchecked")
@@ -182,6 +95,95 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected class InMemoryTransaction implements Transaction<T> {
+
+        private final IdentityHashMap<T, Boolean> updated;
+        private final IdentityHashMap<T, Integer> localCache;
+
+        public InMemoryTransaction() {
+            updated = new IdentityHashMap<>();
+
+            lock.readLock().lock();
+            try {
+                localCache = new IdentityHashMap<>(cache);
+
+                IdentityHashMap<T, T> identities = getIdentities(clazz);
+                for (T o : cache.keySet()) {
+                    T copy = newInstance(clazz);
+
+                    merge(o, copy);
+
+                    identities.put(o, copy);
+                }
+            } finally {
+                lock.readLock().unlock();
+            }
+        }
+
+        @Override
+        public Stream<T> getAll() {
+            return localCache.keySet().stream();
+        }
+
+        @Override
+        public void save(T o) {
+            localCache.put(o, 0);
+            updated.put(o, false);
+        }
+
+        @Override
+        public void update(T o) {
+            localCache.put(o, localCache.get(o) + 1);
+            updated.put(o, true);
+        }
+
+        @Override
+        public void delete(T o) {
+            localCache.remove(o);
+            updated.put(o, false);
+        }
+
+        @Override
+        public void commit() throws DataModificationException {
+            lock.writeLock().lock();
+
+            try {
+                for(T updatedObject : updated.keySet()) {
+                    Integer sharedRevision = cache.get(updatedObject);
+                    Integer localRevision  = localCache.get(updatedObject);
+
+                    if (localRevision == null) {
+                        if (sharedRevision == null) {
+                            throw new DataModificationException(); // updatedObject has been removed before
+                        }
+                    } else {
+                        if (sharedRevision != null && localRevision <= sharedRevision) {
+                            throw new DataModificationException(); // updatedObject has been updated before
+                        }
+                    }
+                }
+
+                IdentityHashMap<T, T> identities = getIdentities(clazz);
+                updated.forEach((updatedObject, wasUpdated) -> {
+                    if (wasUpdated) {
+                        merge(identities.get(updatedObject), updatedObject);
+                    }
+                });
+                identities.clear();
+
+                cache = localCache;
+            } finally {
+                lock.writeLock().unlock();
+            }
+        }
+
+        @Override
+        public void rollback() {
+            getIdentities(clazz).clear();
+        }
+
     }
 
     public static abstract class DataObject {
