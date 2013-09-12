@@ -121,6 +121,35 @@ public class InMemoryDataAccessorTest {
         transaction.commit();
     }
 
+    @Test(expected = DataAccessor.DataModificationException.class)
+    public void testRaceWithSave() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
+        MutablePoint mutablePoint = new MutablePoint(10, 10);
+        transaction.save(mutablePoint);
+        transaction.commit();
+
+        DataAccessor.Transaction<MutablePoint> transaction2 = executor.submit(() -> {
+            DataAccessor.Transaction<MutablePoint> innerTransaction = accessor.beginTransaction();
+            mutablePoint.setX(10);
+            innerTransaction.update(mutablePoint);
+            return innerTransaction;
+        }).get();
+
+        DataAccessor.Transaction<MutablePoint> transaction1 = accessor.beginTransaction();
+        assertEquals(10, mutablePoint.getX());
+        mutablePoint.setX(100);
+
+        executor.submit(() -> {
+            transaction2.commit();
+            return null;
+        }).get();
+
+        transaction1.update(mutablePoint);
+        transaction1.commit();
+    }
+
     private static class MutablePoint extends InMemoryDataAccessor.DataObject implements Serializable {
 
         private int x;
