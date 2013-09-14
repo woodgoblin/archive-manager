@@ -2,7 +2,7 @@
 
 package CoreData {
 
-    interface Core<T> {
+    interface Core<S> {
         +process(service, request, callback)
 
         +loadActivity(activity)
@@ -46,15 +46,15 @@ package Utils {
 
     package Data {
 
-        class DataAccessObject<T> {
-            +beginTransaction(): Transaction<T>
+        class DataAccessObject<S> {
+            +beginTransaction(): Transaction<S>
         }
 
-        class Transaction<T> {
-            +getAll(): Stream<T>
-            +save(T object): void
-            +update(T object): void
-            +delete(T object): void
+        class Transaction<S> {
+            +getAll(): Stream<S>
+            +save(S object): void
+            +update(S object): void
+            +delete(S object): void
         }
 
     }

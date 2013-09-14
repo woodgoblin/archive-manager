@@ -12,19 +12,19 @@ import java.util.function.Function;
  */
 public interface Core<N, D extends Core.DataProvider> {
 
-    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
+    public <A, R, S> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
 
     public void loadActivity(@NotNull Activity<? extends N> activity);
 
     public void unloadActivity(@NotNull Activity<? extends N> activity);
 
-    public void loadService(@NotNull PureService<?, ?> service);
+    public <A, R, S> void loadService(@NotNull ProcessingService<A, R, S> service);
 
-    public void unloadService(@NotNull PureService<?, ?> service);
+    public <A, R, S> void unloadService(@NotNull ProcessingService<A, R, S> service);
 
-    public void loadService(@NotNull DataService<?, ?, ? super D> service);
+    public <A, R> void loadService(@NotNull DataService<A, R, ? super D> service);
 
-    public void unloadService(@NotNull DataService<?, ?, ? super D> service);
+    public <A, R> void unloadService(@NotNull DataService<A, R, ? super D> service);
 
     public interface ApplicationGraphicsContext<N> {
 
@@ -38,6 +38,16 @@ public interface Core<N, D extends Core.DataProvider> {
 
         @NotNull
         D getDataProvider();
+
+    }
+
+    public interface ApplicationProcessingContext<A, R, S> {
+
+        S getState();
+
+        void setState(S state);
+
+        void yield(A request, @NotNull Function<? super R, Void> callback);
 
     }
 

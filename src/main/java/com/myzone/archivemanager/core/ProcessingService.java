@@ -8,9 +8,9 @@ import java.util.function.Function;
  * @author myzone
  * @date 9/8/13 3:14 PM
  */
-public interface PureService<A, R> extends Service<A, R> {
+public interface ProcessingService<A, R, S> extends Service<A, R> {
 
-    void process(A request, @NotNull Function<? super R, Void> callback);
+    void process(A request, @NotNull Function<? super R, Void> callback, @NotNull Core.ApplicationProcessingContext<? super A, ? extends R, S> processingContext);
 
     void onLoad(@NotNull Core<?, ?> core);
 
