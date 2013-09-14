@@ -3,7 +3,9 @@ package com.myzone.archivemanager.data;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -91,7 +93,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
         try {
             Field field = Unsafe.class.getDeclaredField("theUnsafe");
             field.setAccessible(true);
-            return  (Unsafe) field.get(null);
+            return (Unsafe) field.get(null);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -158,9 +160,9 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
             lock.writeLock().lock();
 
             try {
-                for(T updatedObject : updated.keySet()) {
+                for (T updatedObject : updated.keySet()) {
                     Integer sharedRevision = cache.get(updatedObject);
-                    Integer localRevision  = localCache.get(updatedObject);
+                    Integer localRevision = localCache.get(updatedObject);
 
                     if (localRevision == null) {
                         if (sharedRevision == null) {

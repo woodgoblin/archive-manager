@@ -10,10 +10,14 @@ import java.util.function.Function;
  */
 public interface ProcessingService<A, R, S> extends Service<A, R> {
 
-    void process(A request, @NotNull Function<? super R, Void> callback, @NotNull Core.ApplicationProcessingContext<? super A, ? extends R, S> processingContext);
+    void process(A request, @NotNull Function<? super R, Void> callback, @NotNull Core.ApplicationProcessingContext<? super A, ? extends R, S> processingContext) throws YieldException;
 
     void onLoad(@NotNull Core<?, ?> core);
 
     void onUnload(@NotNull Core<?, ?> core);
+
+    class YieldException extends RuntimeException {
+
+    }
 
 }

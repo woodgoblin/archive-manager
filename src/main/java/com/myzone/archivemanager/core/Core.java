@@ -12,7 +12,7 @@ import java.util.function.Function;
  */
 public interface Core<N, D extends Core.DataProvider> {
 
-    public <A, R, S> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
+    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
 
     public void loadActivity(@NotNull Activity<? extends N> activity);
 
@@ -47,7 +47,7 @@ public interface Core<N, D extends Core.DataProvider> {
 
         void setState(S state);
 
-        void yield(A request, @NotNull Function<? super R, Void> callback);
+        void yield(A request, @NotNull Function<? super R, Void> callback) throws ProcessingService.YieldException;
 
     }
 
