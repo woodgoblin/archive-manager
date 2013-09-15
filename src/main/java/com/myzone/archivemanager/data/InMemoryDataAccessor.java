@@ -3,9 +3,11 @@ package com.myzone.archivemanager.data;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -17,50 +19,50 @@ import java.util.stream.Stream;
 public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
     private static final Unsafe UNSAFE = getUnsafe();
-    private static final ThreadLocal<Map<Class<?>, IdentityHashMap<?, ?>>> TRANSACTIONAL_DATA = new ThreadLocal<Map<Class<?>, IdentityHashMap<?, ?>>>() {
 
-        @Override
-        protected Map<Class<?>, IdentityHashMap<?, ?>> initialValue() {
-            return new HashMap<>();
-        }
-
-    };
-
-    @SuppressWarnings("unchecked")
-    private static <T> IdentityHashMap<T, T> getIdentities(Class<T> clazz) {
-        Map<Class<?>, IdentityHashMap<?, ?>> allIdentities = TRANSACTIONAL_DATA.get();
-
-        IdentityHashMap<?, ?> classIdentities = allIdentities.get(clazz);
-        if (classIdentities == null) {
-            classIdentities = new IdentityHashMap<>();
-
-            allIdentities.put(clazz, classIdentities);
-        }
-
-        return (IdentityHashMap<T, T>) classIdentities;
-    }
-
-    private final Class<T> clazz;
+    private final Class<T> originalClass;
+//    private final Class<T> proxyClass;
 
     private final ReadWriteLock lock;
     private volatile IdentityHashMap<T, Integer> cache;
+    private final ThreadLocal<Transaction<T>> localTransaction;
+    private final Map<Transaction<T>, IdentityHashMap<T, T>> identitiesMap;
 
-    public InMemoryDataAccessor(Class<T> clazz) {
-        this.clazz = clazz;
+    public InMemoryDataAccessor(Class<T> originalClass) {
+        if (!originalClass.isInterface())
+            throw new IllegalArgumentException("originalClass should be interface");
+
+        this.originalClass = originalClass;
 
         lock = new ReentrantReadWriteLock(true);
         cache = new IdentityHashMap<>();
-
-        modifyClass(clazz);
-    }
-
-    private void modifyClass(Class<T> clazz) {
-        // todo: i think it's impossible
+        localTransaction = new ThreadLocal<>();
+        identitiesMap = new ConcurrentHashMap<>();
     }
 
     @Override
     public Transaction<T> beginTransaction() {
         return new InMemoryTransaction();
+    }
+
+    protected Transaction<T> currentTransaction() {
+        return localTransaction.get();
+    }
+
+    private T wrap(T original) {
+        return (T) Proxy.newProxyInstance(
+                originalClass.getClassLoader(),
+                new Class[]{originalClass},
+                new SelectInvocationHandler(original)
+        );
+    }
+
+    private T unwrap(T proxy) {
+//        for (Method m : proxy.getClass().getMethods()) {
+//            System.out.println(m.getName());
+//        }
+
+        return ((SelectInvocationHandler) Proxy.getInvocationHandler(proxy)).getOriginal();
     }
 
     @SuppressWarnings("unchecked")
@@ -99,6 +101,32 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
         }
     }
 
+
+    protected class SelectInvocationHandler implements InvocationHandler {
+
+        private final T original;
+
+        public SelectInvocationHandler(T original) {
+            this.original = original;
+        }
+
+        @Override
+        public Object invoke(Object self, Method method, Object[] objects) throws Throwable {
+            T realSelf = identitiesMap.getOrDefault(currentTransaction(), new IdentityHashMap<>()).getOrDefault(self, original);
+
+            Object invoke1 = method.invoke(realSelf, objects);
+
+            System.out.println("proxy " + realSelf + "." + method.getName() + "(" + Arrays.deepToString(objects) + ")" + ": " + invoke1);
+
+            return invoke1;
+        }
+
+        public T getOriginal() {
+            return original;
+        }
+
+    }
+
     protected class InMemoryTransaction implements Transaction<T> {
 
         private final Continue<T> defaultContinue;
@@ -106,18 +134,27 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
         private final IdentityHashMap<T, Integer> localCache;
 
         public InMemoryTransaction() {
-            defaultContinue = () -> this;
+            localTransaction.set(this);
+            defaultContinue = () -> localTransaction.get();
             updated = new IdentityHashMap<>();
 
             lock.readLock().lock();
             try {
                 localCache = new IdentityHashMap<>(cache);
 
-                IdentityHashMap<T, T> identities = getIdentities(clazz);
-                for (T o : cache.keySet()) {
-                    T copy = newInstance(clazz);
+                IdentityHashMap<T, T> identities = identitiesMap.get(this);
 
-                    merge(o, copy);
+                if (identities == null) {
+                    identities = new IdentityHashMap<>();
+
+                    identitiesMap.put(this, identities);
+                }
+
+                for (T o : cache.keySet()) {
+                    T original = unwrap(o);
+
+                    T copy = (T) newInstance(original.getClass());
+                    merge(original, copy);
 
                     identities.put(o, copy);
                 }
@@ -133,6 +170,8 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
         @Override
         public Continue<T> save(T o) {
+            o = wrap(o);
+
             localCache.put(o, 0);
             updated.put(o, false);
 
@@ -175,13 +214,16 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
                     }
                 }
 
-                IdentityHashMap<T, T> identities = getIdentities(clazz);
+                Map<T, T> identities = identitiesMap.get(this);
                 updated.forEach((updatedObject, wasUpdated) -> {
                     if (wasUpdated) {
-                        merge(identities.get(updatedObject), updatedObject);
+                        T original = unwrap(updatedObject);
+                        T copy = identities.get(updatedObject);
+
+                        merge(copy, original);
                     }
                 });
-                identities.clear();
+                identitiesMap.remove(this);
 
                 cache = localCache;
             } finally {
@@ -191,16 +233,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
         @Override
         public void rollback() {
-            getIdentities(clazz).clear();
-        }
-
-    }
-
-    public static abstract class DataObject {
-
-        @SuppressWarnings("unchecked")
-        protected <T extends DataObject> T transactional(T o) {
-            return getIdentities((Class<T>) o.getClass()).getOrDefault(o, o);
+            identitiesMap.remove(this);
         }
 
     }

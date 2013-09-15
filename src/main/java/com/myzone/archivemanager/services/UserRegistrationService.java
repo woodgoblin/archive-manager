@@ -7,6 +7,7 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.SortedSet;
 import java.util.function.Function;
 
 /**
@@ -24,7 +25,31 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
                 if (transaction.getAll().filter((user) -> request.getPreferredUsername().equals(user.getUsername())).count() > 0)
                     throw new Exception();
 
-                User newUser = new User(request.getPreferredUsername(), request.getPreferredPassword());
+                User newUser = new User() {
+                    @Override
+                    public String getUsername() {
+                        return request.getPreferredUsername();
+                    }
+
+                    @Override
+                    public boolean isRightPassword(String password) {
+                        return false;
+                    }
+
+                    @Override
+                    public void modifyPassword(AuthorizedSession authorizedSession, String newPassword) {
+                    }
+
+                    @Override
+                    public SortedSet<Session> getSessions() {
+                        return null;
+                    }
+
+                    @Override
+                    public ClosableSession startSession(String password) throws SessionStartFailedException {
+                        return null;
+                    }
+                };
                 transaction.save(newUser);
                 transaction.commit();
 

@@ -20,13 +20,13 @@ import static org.junit.Assert.*;
  */
 public class InMemoryDataAccessorTest {
 
-    private DataAccessor<MutablePoint> accessor;
+    private DataAccessor<Point> accessor;
 
     @Before
     public void setUp() throws Exception {
-        accessor = new InMemoryDataAccessor<>(MutablePoint.class);
+        accessor = new InMemoryDataAccessor<>(Point.class);
 
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
         try {
             transaction.save(new MutablePoint(0, 0));
             transaction.save(new MutablePoint(1, 1));
@@ -44,8 +44,8 @@ public class InMemoryDataAccessorTest {
 
     @Test
     public void testMutableDataCorruption1() throws Exception {
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
-        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
+        Point mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
         assertNotNull(mutablePoint);
         mutablePoint.setX(10);
         transaction.update(mutablePoint);
@@ -58,8 +58,8 @@ public class InMemoryDataAccessorTest {
 
     @Test
     public void testMutableDataCorruption2() throws Exception {
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
-        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
+        Point mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
         assertNotNull(mutablePoint);
         mutablePoint.setX(10);
         transaction.commit();
@@ -71,8 +71,8 @@ public class InMemoryDataAccessorTest {
 
     @Test
     public void testMutableDataCorruption3() throws Exception {
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
-        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
+        Point mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
         assertNotNull(mutablePoint);
         mutablePoint.setX(10);
         transaction.rollback();
@@ -84,9 +84,9 @@ public class InMemoryDataAccessorTest {
 
     @Test
     public void testDataCorruption() throws Exception {
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
         assertEquals(1, transaction.getAll().filter(point -> point.getX() == 0).count());
-        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        Point mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
         assertNotNull(mutablePoint);
         transaction.delete(mutablePoint);
         assertEquals(0, transaction.getAll().filter(point -> point.getX() == 0).count());
@@ -101,17 +101,17 @@ public class InMemoryDataAccessorTest {
     public void testRace() throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        DataAccessor.Transaction<MutablePoint> transaction1 = executor.submit(() -> {
-            DataAccessor.Transaction<MutablePoint> innerTransaction = accessor.beginTransaction();
-            MutablePoint innerMutablePoint = innerTransaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        DataAccessor.Transaction<Point> transaction1 = executor.submit(() -> {
+            DataAccessor.Transaction<Point> innerTransaction = accessor.beginTransaction();
+            Point innerMutablePoint = innerTransaction.getAll().filter(point -> point.getX() == 0).findAny().get();
             assertNotNull(innerMutablePoint);
             innerMutablePoint.setX(10);
             innerTransaction.update(innerMutablePoint);
             return innerTransaction;
         }).get();
 
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
-        MutablePoint mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
+        Point mutablePoint = transaction.getAll().filter(point -> point.getX() == 0).findAny().get();
         assertNotNull(mutablePoint);
         assertEquals(0, mutablePoint.getX());
         mutablePoint.setX(100);
@@ -129,19 +129,19 @@ public class InMemoryDataAccessorTest {
     public void testRaceWithSave() throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
-        DataAccessor.Transaction<MutablePoint> transaction = accessor.beginTransaction();
+        DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
         MutablePoint mutablePoint = new MutablePoint(10, 10);
         transaction.save(mutablePoint);
         transaction.commit();
 
-        DataAccessor.Transaction<MutablePoint> transaction2 = executor.submit(() -> {
-            DataAccessor.Transaction<MutablePoint> innerTransaction = accessor.beginTransaction();
+        DataAccessor.Transaction<Point> transaction2 = executor.submit(() -> {
+            DataAccessor.Transaction<Point> innerTransaction = accessor.beginTransaction();
             mutablePoint.setX(10);
             innerTransaction.update(mutablePoint);
             return innerTransaction;
         }).get();
 
-        DataAccessor.Transaction<MutablePoint> transaction1 = accessor.beginTransaction();
+        DataAccessor.Transaction<Point> transaction1 = accessor.beginTransaction();
         assertEquals(10, mutablePoint.getX());
         mutablePoint.setX(100);
 
@@ -156,30 +156,34 @@ public class InMemoryDataAccessorTest {
 
     @Test
     public void testManyAccessors() throws Exception {
-        DataAccessor<MutablePoint> accessor1 = new InMemoryDataAccessor<>(MutablePoint.class);
-        DataAccessor<MutablePoint> accessor2 = new InMemoryDataAccessor<>(MutablePoint.class);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        DataAccessor<Point> accessor1 = new InMemoryDataAccessor<>(Point.class);
+        DataAccessor<Point> accessor2 = new InMemoryDataAccessor<>(Point.class);
 
         MutablePoint mutablePoint = new MutablePoint(10, 10);
 
-        DataAccessor.Transaction<MutablePoint> transaction1 = accessor1.beginTransaction();
+        DataAccessor.Transaction<Point> transaction1 = accessor1.beginTransaction();
         transaction1.save(mutablePoint);
         transaction1.commit();
 
-        DataAccessor.Transaction<MutablePoint> transaction2 = accessor2.beginTransaction();
+        DataAccessor.Transaction<Point> transaction2 = accessor2.beginTransaction();
         transaction2.save(mutablePoint);
         transaction2.commit();
 
-        DataAccessor.Transaction<MutablePoint> transaction3 = accessor1.beginTransaction();
+        DataAccessor.Transaction<Point> transaction3 = accessor1.beginTransaction();
         mutablePoint.setY(100);
         transaction3.update(mutablePoint);
 
-        DataAccessor.Transaction<MutablePoint> transaction4 = accessor2.beginTransaction();
-        assertEquals(10, mutablePoint.getY());
-        transaction4.rollback();
+        executor.submit(() -> {
+            DataAccessor.Transaction<Point> transaction4 = accessor2.beginTransaction();
+            assertEquals(10, mutablePoint.getY());
+            transaction4.rollback();
+        });
 
         transaction3.commit();
 
-        DataAccessor.Transaction<MutablePoint> transaction5 = accessor2.beginTransaction();
+        DataAccessor.Transaction<Point> transaction5 = accessor2.beginTransaction();
         assertEquals(100, mutablePoint.getY());
         transaction5.rollback();
     }
@@ -196,6 +200,10 @@ public class InMemoryDataAccessorTest {
                 .and()
                 .commit();
 
+        System.out.println(mutablePoint1 + ".hashCode(null):" + mutablePoint1.hashCode());
+        System.out.println(mutablePoint2 + ".hashCode(null):" + mutablePoint2.hashCode());
+        System.out.println("--------------------------------");
+
         assertTrue(
                 accessor.beginTransaction()
                         .getAll()
@@ -204,7 +212,20 @@ public class InMemoryDataAccessorTest {
         );
     }
 
-    private static class MutablePoint extends InMemoryDataAccessor.DataObject implements Serializable {
+
+    private static interface Point {
+
+        int getX();
+
+        void setX(int x);
+
+        int getY();
+
+        void setY(int y);
+
+    }
+
+    private static class MutablePoint implements Point {
 
         private int x;
         private int y;
@@ -214,28 +235,20 @@ public class InMemoryDataAccessorTest {
             this.y = y;
         }
 
-        private int getX() {
-            return transactional(this).x;
+        public int getX() {
+            return x;
         }
 
-        private void setX(int x) {
-            transactional(this).x = x;
+        public void setX(int x) {
+            this.x = x;
         }
 
-        private int getY() {
-            return transactional(this).y;
+        public int getY() {
+            return y;
         }
 
-        private void setY(int y) {
-            transactional(this).y = y;
-        }
-
-        @Override
-        public String toString() {
-            return "MutablePoint{" +
-                    "x=" + transactional(this).x +
-                    ", y=" + transactional(this).y +
-                    '}';
+        public void setY(int y) {
+            this.y = y;
         }
 
         @Override
@@ -245,18 +258,27 @@ public class InMemoryDataAccessorTest {
 
             MutablePoint that = (MutablePoint) o;
 
-            if (transactional(this).x != that.getX()) return false;
-            if (transactional(this).y != that.getY()) return false;
+            if (getX() != that.getX()) return false;
+            if (getY() != that.getY()) return false;
 
             return true;
         }
 
         @Override
         public int hashCode() {
-            int result = transactional(this).x;
-            result = 31 * result + transactional(this).y;
+            int result = getX();
+            result = 31 * result + getY();
             return result;
         }
+
+        @Override
+        public String toString() {
+            return "MutablePoint{" +
+                    "x=" + x +
+                    ", y=" + y +
+                    '}';
+        }
+
     }
 
 }
