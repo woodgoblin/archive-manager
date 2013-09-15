@@ -3,6 +3,7 @@ package com.myzone.archivemanager.services;
 import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.core.DataService;
 import com.myzone.archivemanager.data.DataAccessor;
+import com.myzone.archivemanager.data.InMemoryDataAccessor;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import org.jetbrains.annotations.NotNull;
@@ -22,35 +23,11 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
             DataAccessor<User> usersUserDataAccessor = dataContext.getDataProvider().get();
             DataAccessor.Transaction<User> transaction = usersUserDataAccessor.beginTransaction();
             try {
-                if (transaction.getAll().filter((user) -> request.getPreferredUsername().equals(user.getUsername())).count() > 0)
+                if (transaction.getAll().filter((user) -> request.getPreferredUsername().equals(user.getUsername())).count() > 0) {
                     throw new Exception();
+                }
 
-                User newUser = new User() {
-                    @Override
-                    public String getUsername() {
-                        return request.getPreferredUsername();
-                    }
-
-                    @Override
-                    public boolean isRightPassword(String password) {
-                        return false;  //To change body of implemented methods use File | Settings | File Templates.
-                    }
-
-                    @Override
-                    public void modifyPassword(AuthorizedSession authorizedSession, String newPassword) {
-                        //To change body of implemented methods use File | Settings | File Templates.
-                    }
-
-                    @Override
-                    public SortedSet<Session> getSessions() {
-                        return null;  //To change body of implemented methods use File | Settings | File Templates.
-                    }
-
-                    @Override
-                    public ClosableSession startSession(String password) throws SessionStartFailedException {
-                        return null;  //To change body of implemented methods use File | Settings | File Templates.
-                    }
-                };
+                User newUser = new SimpleUser(request.getPreferredUsername());
                 transaction.save(newUser);
                 transaction.commit();
 
@@ -84,6 +61,58 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
     public static interface UserRegistrationResponse {
 
         User getRegisteredUser();
+
+    }
+
+    private static class SimpleUser extends InMemoryDataAccessor.DataObject implements User {
+
+        private final String userName;
+
+        private SimpleUser(String userName) {
+            this.userName = userName;
+        }
+
+        @Override
+        public String getUsername() {
+            return transactional(this).userName;
+        }
+
+        @Override
+        public boolean isRightPassword(String password) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void modifyPassword(AuthorizedSession authorizedSession, String newPassword) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public SortedSet<Session> getSessions() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ClosableSession startSession(String password) throws SessionStartFailedException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SimpleUser that = (SimpleUser) o;
+
+            if (transactional(this).userName != null ? !transactional(this).userName.equals(that.userName) : that.userName != null) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return transactional(this).userName != null ? userName.hashCode() : 0;
+        }
 
     }
 

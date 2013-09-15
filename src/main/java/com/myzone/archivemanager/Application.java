@@ -33,6 +33,14 @@ public class Application extends javafx.application.Application {
         stage.setScene(new Scene(rootPane));
         stage.setResizable(false);
 
+        RecursiveDataProvider dataProvider = new RecursiveDataProvider<User, DataProvider<Document, DataProviderEnd>>(
+                new InMemoryDataAccessor<>(User.class),
+                new RecursiveDataProvider<>(
+                        new InMemoryDataAccessor<>(Document.class),
+                        DataProviderEnd.END
+                )
+        );
+
         JavaFxBasedCore<DataProvider<User, DataProvider<Document, DataProviderEnd>>> core = new JavaFxBasedCore<DataProvider<User, DataProvider<Document, DataProviderEnd>>>(
                 rootPane,
                 new GreenThreadCoreFactory<>(),
@@ -44,13 +52,7 @@ public class Application extends javafx.application.Application {
                             @NotNull
                             @Override
                             public DataProvider<User, DataProvider<Document, DataProviderEnd>> getDataProvider() {
-                                return new RecursiveDataProvider<User, DataProvider<Document, DataProviderEnd>>(
-                                        new InMemoryDataAccessor<>(User.class),
-                                        new RecursiveDataProvider<>(
-                                                new InMemoryDataAccessor<>(Document.class),
-                                                DataProviderEnd.END
-                                        )
-                                );
+                                return dataProvider;
                             }
                         };
                     }
