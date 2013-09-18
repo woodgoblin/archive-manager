@@ -32,7 +32,7 @@ public interface ScheduledCore<N, D extends Core.DataProvider> extends Core<N, D
     interface GraphicsContextProvider<N> {
 
         @NotNull
-        ApplicationGraphicsContext<N> provide(@NotNull Activity<? extends N> activity);
+        <R> ApplicationGraphicsContext<N> provide(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder);
 
     }
 

@@ -1,6 +1,7 @@
 package com.myzone.archivemanager;
 
 import com.myzone.archivemanager.activities.UserRegistrationActivity;
+import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.core.DataService;
 import com.myzone.archivemanager.core.GreenThreadCoreFactory;
 import com.myzone.archivemanager.core.JavaFxBasedCore;
@@ -10,6 +11,7 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.services.ConcatService;
 import com.myzone.utils.RecursiveImmutableTuple;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -42,13 +44,12 @@ public class Application extends javafx.application.Application {
         );
 
         JavaFxBasedCore<DataProvider<User, DataProvider<Document, DataProviderEnd>>> core = new JavaFxBasedCore<DataProvider<User, DataProvider<Document, DataProviderEnd>>>(
-                rootPane,
                 new GreenThreadCoreFactory<>(),
                 new DataContextProvider<DataProvider<User, DataProvider<Document, DataProviderEnd>>>() {
                     @NotNull
                     @Override
                     public <A, R> ApplicationDataContext<? extends DataProvider<User, DataProvider<Document, DataProviderEnd>>> provide(@NotNull DataService<A, R, ? super DataProvider<User, DataProvider<Document, DataProviderEnd>>> dataService) {
-                        return new ApplicationDataContext<DataProvider<User, DataProvider<Document, DataProviderEnd>>>() {
+                        return  new ApplicationDataContext<DataProvider<User, DataProvider<Document, DataProviderEnd>>>() {
                             @NotNull
                             @Override
                             public DataProvider<User, DataProvider<Document, DataProviderEnd>> getDataProvider() {
@@ -59,7 +60,7 @@ public class Application extends javafx.application.Application {
                 }
         );
         UserRegistrationActivity userRegistrationActivity = new UserRegistrationActivity(core);
-        core.loadActivity(userRegistrationActivity);
+        core.loadActivity(userRegistrationActivity, rootPane, JavaFxBinder.BINDER);
 
         ConcatService concatService = new ConcatService();
         core.loadService(concatService);
@@ -74,6 +75,22 @@ public class Application extends javafx.application.Application {
 
     public static void main(String[] args) {
         javafx.application.Application.launch(args);
+    }
+
+    public static enum JavaFxBinder implements Core.Binder<Pane, Node> {
+
+        BINDER;
+
+        @Override
+        public void bind(@NotNull Pane root, @NotNull Node node) {
+            root.getChildren().add(node);
+        }
+
+        @Override
+        public void unbind(@NotNull Pane root, @NotNull Node node) {
+            root.getChildren().remove(node);
+        }
+
     }
 
     public static class RecursiveDataProvider<D, T extends DataProvider> extends RecursiveImmutableTuple<DataAccessor<D>, T> implements DataProvider<D, T> {

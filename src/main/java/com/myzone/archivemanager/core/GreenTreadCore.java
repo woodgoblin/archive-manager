@@ -105,14 +105,16 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     }
 
     @Override
-    public void loadActivity(@NotNull Activity<? extends N> activity) {
-        uiBinding.runOnUiThread(() -> activity.onLoad(graphicsContextProvider.provide(activity)));
+    public <R> void loadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder) {
+        uiBinding.runOnUiThread(() -> activity.onLoad(graphicsContextProvider.provide(activity, root, binder)));
     }
 
     @Override
-    public void unloadActivity(@NotNull Activity<? extends N> activity) {
-        uiBinding.runOnUiThread(() -> activity.onUnload(graphicsContextProvider.provide(activity)));
+    public <R> void unloadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder) {
+        uiBinding.runOnUiThread(() -> activity.onUnload(graphicsContextProvider.provide(activity, root, binder)));
     }
+
+
 
     @Override
     public <A, R, S> void loadService(@NotNull ProcessingService<A, R, S> service) {

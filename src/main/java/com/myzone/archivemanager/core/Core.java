@@ -14,9 +14,9 @@ public interface Core<N, D extends Core.DataProvider> {
 
     public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
 
-    public void loadActivity(@NotNull Activity<? extends N> activity);
+    public <R> void loadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder);
 
-    public void unloadActivity(@NotNull Activity<? extends N> activity);
+    public <R> void unloadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder);
 
     public <A, R, S> void loadService(@NotNull ProcessingService<A, R, S> service);
 
@@ -31,6 +31,14 @@ public interface Core<N, D extends Core.DataProvider> {
         void bind(@NotNull N node);
 
         void unbind(@NotNull N node);
+
+    }
+
+    public interface Binder<R, N> {
+
+        void bind(@NotNull R root, @NotNull N node);
+
+        void unbind(@NotNull R root, @NotNull N node);
 
     }
 

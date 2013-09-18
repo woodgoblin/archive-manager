@@ -16,7 +16,6 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
     private final ScheduledCore<Node, D> underlyingCore;
 
     public JavaFxBasedCore(
-            @NotNull Pane rootNode,
             @NotNull ScheduledCore.Factory<Node, D> underlyingCoreFactory,
             @NotNull ScheduledCore.DataContextProvider<D> dataContextProvider
     ) {
@@ -34,26 +33,25 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
                     }
 
                 },
-                new GreenTreadCore.GraphicsContextProvider<Node>() {
+                new ScheduledCore.GraphicsContextProvider<Node>() {
 
                     @NotNull
                     @Override
-                    public ApplicationGraphicsContext<Node> provide(@NotNull Activity<? extends Node> activity) {
+                    public <R> ApplicationGraphicsContext<Node> provide(@NotNull Activity<? extends Node> activity, @NotNull R root, @NotNull Binder<? super R, ? super Node> binder) {
                         return new ApplicationGraphicsContext<Node>() {
 
                             @Override
                             public void bind(@NotNull Node node) {
-                                rootNode.getChildren().add(node);
+                                binder.bind(root, node);
                             }
 
                             @Override
                             public void unbind(@NotNull Node node) {
-                                rootNode.getChildren().remove(node);
+                                binder.unbind(root, node);
                             }
 
                         };
                     }
-
                 },
                 dataContextProvider
         );
@@ -65,13 +63,13 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
     }
 
     @Override
-    public void loadActivity(@NotNull Activity<? extends Node> activity) {
-        underlyingCore.loadActivity(activity);
+    public <R> void loadActivity(@NotNull Activity<? extends Node> activity, @NotNull R root, @NotNull Binder<? super R, ? super Node> binder) {
+        underlyingCore.loadActivity(activity, root, binder);
     }
 
     @Override
-    public void unloadActivity(@NotNull Activity<? extends Node> activity) {
-        underlyingCore.unloadActivity(activity);
+    public <R> void unloadActivity(@NotNull Activity<? extends Node> activity, @NotNull R root, @NotNull Binder<? super R, ? super Node> binder) {
+        underlyingCore.unloadActivity(activity, root, binder);
     }
 
     @Override
