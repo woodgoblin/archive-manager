@@ -1,15 +1,21 @@
 @startuml
 left to right direction
 
-User <|- Author
+Пользователь  <|- Автор
 
-User -- (Access document revision)
-(Access document revision) -- ArchiveManager
+Пользователь -- (Получить ревизию)
+(Получить ревизию) -- Cистема
 
-Author -- (Create document revision)
-(Create document revision) -- ArchiveManager
+Пользователь -- (Комментрировать ревизию)
+(Комментрировать ревизию) -- Cистема
+(Комментрировать ревизию) <. (Получить ревизию) : <<extends>>
 
-Author -- (Share document revision)
-(Share document revision) -- ArchiveManager
+Автор -- (Создать ревизию)
+(Создать ревизию) -- Cистема
+
+Автор -- (Создать документ)
+(Создать документ) -- Cистема
+(Создать ревизию) .> (Создать документ) : <<include>>
+
 
 @enduml
