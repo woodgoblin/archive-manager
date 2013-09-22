@@ -1,5 +1,8 @@
 package com.myzone.archivemanager.model;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.time.Clock;
 import java.util.SortedSet;
 
@@ -9,31 +12,40 @@ import java.util.SortedSet;
  */
 public interface User {
 
+    @NotNull
     String getUsername();
 
-    boolean isRightPassword(String password);
+    boolean isRightPassword(@NotNull String password);
 
-    void modifyPassword(AuthorizedSession authorizedSession, String newPassword);
+    void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword);
 
+    @NotNull
     SortedSet<Session> getSessions();
 
-    ClosableSession startSession(String password) throws SessionStartFailedException;
+    @NotNull
+    CloseableSession startSession(@NotNull String password) throws SessionStartFailedException;
 
     interface Session {
 
+        @NotNull
         Clock getBegin();
 
+        @Nullable
         Clock getEnd();
 
     }
 
     interface AuthorizedSession extends Session {
 
+        @NotNull
         User getSessionOwner();
 
     }
 
-    interface ClosableSession extends AuthorizedSession, AutoCloseable {
+    interface CloseableSession extends AuthorizedSession, AutoCloseable {
+
+        @Override
+        void close();
 
     }
 

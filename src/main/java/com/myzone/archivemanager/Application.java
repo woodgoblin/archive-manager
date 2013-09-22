@@ -1,7 +1,8 @@
 package com.myzone.archivemanager;
 
-import com.myzone.archivemanager.activities.UserRegistrationActivity;
-import com.myzone.archivemanager.core.Core;
+import com.myzone.archivemanager.activities.MainMenuActivity;
+import com.myzone.archivemanager.activities.StatusActivity;
+import com.myzone.archivemanager.activities.UserAuthorisationActivity;
 import com.myzone.archivemanager.core.DataService;
 import com.myzone.archivemanager.core.GreenThreadCoreFactory;
 import com.myzone.archivemanager.core.JavaFxBasedCore;
@@ -9,9 +10,7 @@ import com.myzone.archivemanager.data.DataAccessor;
 import com.myzone.archivemanager.data.InMemoryDataAccessor;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
-import com.myzone.archivemanager.services.ConcatService;
 import com.myzone.utils.RecursiveImmutableTuple;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
@@ -20,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import static com.myzone.archivemanager.core.Core.ApplicationDataContext;
 import static com.myzone.archivemanager.core.Core.DataProvider;
 import static com.myzone.archivemanager.core.Core.DataProvider.DataProviderEnd;
+import static com.myzone.archivemanager.core.JavaFxBasedCore.binder;
 import static com.myzone.archivemanager.core.ScheduledCore.DataContextProvider;
 import static javafx.application.Platform.runLater;
 
@@ -59,15 +59,28 @@ public class Application extends javafx.application.Application {
                     }
                 }
         );
-        UserRegistrationActivity userRegistrationActivity = new UserRegistrationActivity(core);
-        core.loadActivity(userRegistrationActivity, rootPane, JavaFxBinder.BINDER);
 
-        ConcatService concatService = new ConcatService();
-        core.loadService(concatService);
-        core.processRequest(concatService, new String[]{"Hello", ", ", "world", "!"}, (result) -> {
-            System.out.println(result);
-            return null;
+        UserAuthorisationActivity userAuthorisationActivity = new UserAuthorisationActivity(core);
+        userAuthorisationActivity.getStatus().addListener((observableValue, oldStatus, newStatus) -> {
+            if (newStatus == StatusActivity.Status.DONE) {
+                try {
+                    core.unloadActivity(userAuthorisationActivity, rootPane, binder());
+
+                    Pane mainMenuPane = new Pane();
+                    Stage mainMenuStage = new Stage();
+                    mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
+
+                    MainMenuActivity menuActivity = new MainMenuActivity(core, userAuthorisationActivity.getSession());
+                    core.loadActivity(menuActivity, mainMenuPane, binder());
+
+                    mainMenuStage.show();
+                    stage.hide();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
         });
+        core.loadActivity(userAuthorisationActivity, rootPane, binder());
 
         stage.setOnCloseRequest(e -> System.exit(0));
         runLater(stage::show);
@@ -75,22 +88,6 @@ public class Application extends javafx.application.Application {
 
     public static void main(String[] args) {
         javafx.application.Application.launch(args);
-    }
-
-    public static enum JavaFxBinder implements Core.Binder<Pane, Node> {
-
-        BINDER;
-
-        @Override
-        public void bind(@NotNull Pane root, @NotNull Node node) {
-            root.getChildren().add(node);
-        }
-
-        @Override
-        public void unbind(@NotNull Pane root, @NotNull Node node) {
-            root.getChildren().remove(node);
-        }
-
     }
 
     public static class RecursiveDataProvider<D, T extends DataProvider> extends RecursiveImmutableTuple<DataAccessor<D>, T> implements DataProvider<D, T> {

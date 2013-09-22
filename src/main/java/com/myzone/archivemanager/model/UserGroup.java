@@ -1,5 +1,7 @@
 package com.myzone.archivemanager.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Set;
 
 /**
@@ -8,10 +10,11 @@ import java.util.Set;
  */
 public interface UserGroup {
 
+    void rank(@NotNull User.AuthorizedSession session, @NotNull User targetUser);
+
+    void disrank(@NotNull User.AuthorizedSession session, @NotNull User targetUser);
+
+    @NotNull
     Set<User> getUsers();
-
-    void rank(User modifier, User targetUser);
-
-    void disrank(User modifier, User targetUser);
 
 }

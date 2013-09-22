@@ -1,5 +1,6 @@
 package com.myzone.archivemanager.services;
 
+import com.google.common.base.Objects;
 import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.core.DataService;
 import com.myzone.archivemanager.data.DataAccessor;
@@ -7,7 +8,9 @@ import com.myzone.archivemanager.data.InMemoryDataAccessor;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.time.Clock;
 import java.util.SortedSet;
 import java.util.function.Function;
 
@@ -27,7 +30,7 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
                     throw new Exception();
                 }
 
-                User newUser = new SimpleUser(request.getPreferredUsername());
+                User newUser = new SimpleUser(request.getPreferredUsername(), request.getPreferredPassword());
                 transaction.save(newUser);
                 transaction.commit();
 
@@ -67,19 +70,21 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
     private static class SimpleUser extends InMemoryDataAccessor.DataObject implements User {
 
         private final String userName;
+        private final String password;
 
-        private SimpleUser(String userName) {
+        private SimpleUser(String userName, String password) {
             this.userName = userName;
+            this.password = password;
         }
 
         @Override
         public String getUsername() {
-            return transactional(this).userName;
+            return userName;
         }
 
         @Override
         public boolean isRightPassword(String password) {
-            throw new UnsupportedOperationException();
+            return password.equals(this.password);
         }
 
         @Override
@@ -93,8 +98,35 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
         }
 
         @Override
-        public ClosableSession startSession(String password) throws SessionStartFailedException {
-            throw new UnsupportedOperationException();
+        public CloseableSession startSession(String password) throws SessionStartFailedException {
+            if (!isRightPassword(password)) {
+                throw new LoginFailedException();
+            }
+
+            return new CloseableSession() {
+
+                @Override
+                public void close() {
+                }
+
+                @NotNull
+                @Override
+                public User getSessionOwner() {
+                    return SimpleUser.this;
+                }
+
+                @NotNull
+                @Override
+                public Clock getBegin() {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Nullable
+                @Override
+                public Clock getEnd() {
+                    throw new UnsupportedOperationException();
+                }
+            };
         }
 
         @Override
@@ -104,16 +136,27 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
 
             SimpleUser that = (SimpleUser) o;
 
-            if (transactional(this).userName != null ? !transactional(this).userName.equals(that.userName) : that.userName != null) return false;
+            if (password != null ? !password.equals(that.password) : that.password != null) return false;
+            if (userName != null ? !userName.equals(that.userName) : that.userName != null) return false;
 
             return true;
         }
 
         @Override
         public int hashCode() {
-            return transactional(this).userName != null ? userName.hashCode() : 0;
+            int result = userName != null ? userName.hashCode() : 0;
+            result = 31 * result + (password != null ? password.hashCode() : 0);
+            return result;
         }
 
+        @Override
+        public String toString() {
+            return Objects
+                    .toStringHelper(this)
+                    .add("userName", userName)
+                    .add("password", password)
+                    .toString();
+        }
     }
 
 }

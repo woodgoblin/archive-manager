@@ -50,12 +50,6 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
         lock = new ReentrantReadWriteLock(true);
         cache = new IdentityHashMap<>();
-
-        modifyClass(clazz);
-    }
-
-    private void modifyClass(Class<T> clazz) {
-        // todo: i think it's impossible
     }
 
     @Override
@@ -115,7 +109,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
                 IdentityHashMap<T, T> identities = getIdentities(clazz);
                 for (T o : cache.keySet()) {
-                    T copy = newInstance(clazz);
+                    T copy = (T) newInstance(o.getClass());
 
                     merge(o, copy);
 

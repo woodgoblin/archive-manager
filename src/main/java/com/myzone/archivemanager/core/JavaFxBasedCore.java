@@ -92,5 +92,25 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
         underlyingCore.unloadService(service);
     }
 
+    @SuppressWarnings("unchecked")
+    public static <P extends Pane, N extends Node> Binder<P, N> binder() {
+        return (Binder<P, N>) JavaFxBinder.BINDER;
+    }
+
+    protected static enum JavaFxBinder implements Core.Binder<Pane, Node> {
+
+        BINDER;
+
+        @Override
+        public void bind(@NotNull Pane root, @NotNull Node node) {
+            root.getChildren().add(node);
+        }
+
+        @Override
+        public void unbind(@NotNull Pane root, @NotNull Node node) {
+            root.getChildren().remove(node);
+        }
+
+    }
 
 }

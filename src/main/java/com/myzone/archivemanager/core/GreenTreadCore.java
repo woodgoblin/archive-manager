@@ -114,8 +114,6 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
         uiBinding.runOnUiThread(() -> activity.onUnload(graphicsContextProvider.provide(activity, root, binder)));
     }
 
-
-
     @Override
     public <A, R, S> void loadService(@NotNull ProcessingService<A, R, S> service) {
         executeOnFunctions.putIfAbsent(service, runnable -> {
