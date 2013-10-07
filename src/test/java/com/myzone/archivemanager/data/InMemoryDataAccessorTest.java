@@ -3,13 +3,9 @@ package com.myzone.archivemanager.data;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
-import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.*;
@@ -28,14 +24,12 @@ public class InMemoryDataAccessorTest {
 
         DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
         try {
-            transaction.save(new MutablePoint(0, 0));
-            transaction.save(new MutablePoint(1, 1));
-            transaction.save(new MutablePoint(2, 2));
+            transaction.save(new PointImpl(0, 0));
+            transaction.save(new PointImpl(1, 1));
+            transaction.save(new PointImpl(2, 2));
 
             transaction.commit();
         } catch (Exception e) {
-            e.printStackTrace();
-
             transaction.rollback();
 
             throw e;
@@ -130,8 +124,7 @@ public class InMemoryDataAccessorTest {
         ExecutorService executor = Executors.newSingleThreadExecutor();
 
         DataAccessor.Transaction<Point> transaction = accessor.beginTransaction();
-        MutablePoint mutablePoint = new MutablePoint(10, 10);
-        transaction.save(mutablePoint);
+        Point mutablePoint = transaction.getAll().filter((point) -> point.getX() == 1).findFirst().get();
         transaction.commit();
 
         DataAccessor.Transaction<Point> transaction2 = executor.submit(() -> {
@@ -142,7 +135,7 @@ public class InMemoryDataAccessorTest {
         }).get();
 
         DataAccessor.Transaction<Point> transaction1 = accessor.beginTransaction();
-        assertEquals(10, mutablePoint.getX());
+        assertEquals(1, mutablePoint.getX());
         mutablePoint.setX(100);
 
         executor.submit(() -> {
@@ -161,55 +154,49 @@ public class InMemoryDataAccessorTest {
         DataAccessor<Point> accessor1 = new InMemoryDataAccessor<>(Point.class);
         DataAccessor<Point> accessor2 = new InMemoryDataAccessor<>(Point.class);
 
-        MutablePoint mutablePoint = new MutablePoint(10, 10);
+        PointImpl pointImpl = new PointImpl(10, 10);
 
         DataAccessor.Transaction<Point> transaction1 = accessor1.beginTransaction();
-        transaction1.save(mutablePoint);
+        transaction1.save(pointImpl);
         transaction1.commit();
 
         DataAccessor.Transaction<Point> transaction2 = accessor2.beginTransaction();
-        transaction2.save(mutablePoint);
+        transaction2.save(pointImpl);
         transaction2.commit();
 
         DataAccessor.Transaction<Point> transaction3 = accessor1.beginTransaction();
-        mutablePoint.setY(100);
-        transaction3.update(mutablePoint);
+        pointImpl.setY(100);
+        transaction3.update(pointImpl);
 
         executor.submit(() -> {
             DataAccessor.Transaction<Point> transaction4 = accessor2.beginTransaction();
-            assertEquals(10, mutablePoint.getY());
+            assertEquals(10, pointImpl.getY());
             transaction4.rollback();
         });
 
         transaction3.commit();
 
         DataAccessor.Transaction<Point> transaction5 = accessor2.beginTransaction();
-        assertEquals(100, mutablePoint.getY());
+        assertEquals(100, pointImpl.getY());
         transaction5.rollback();
     }
 
     @Test
     public void testContinue() throws Exception {
-        MutablePoint mutablePoint1 = new MutablePoint(10, 10);
-        MutablePoint mutablePoint2 = new MutablePoint(14, 15);
+        PointImpl pointImpl1 = new PointImpl(10, 10);
+        PointImpl pointImpl2 = new PointImpl(14, 15);
 
         accessor.beginTransaction()
-                .save(mutablePoint1)
+                .save(pointImpl1)
                 .and()
-                .save(mutablePoint2)
+                .save(pointImpl2)
                 .and()
                 .commit();
 
-        System.out.println(mutablePoint1 + ".hashCode(null):" + mutablePoint1.hashCode());
-        System.out.println(mutablePoint2 + ".hashCode(null):" + mutablePoint2.hashCode());
-        System.out.println("--------------------------------");
-
-        assertTrue(
-                accessor.beginTransaction()
+        assertTrue(accessor.beginTransaction()
                         .getAll()
                         .collect(toSet())
-                        .containsAll(asList(mutablePoint1, mutablePoint2))
-        );
+                        .containsAll(asList(pointImpl1, pointImpl2)));
     }
 
 
@@ -225,12 +212,12 @@ public class InMemoryDataAccessorTest {
 
     }
 
-    private static class MutablePoint implements Point {
+    private static class PointImpl implements Point {
 
         private int x;
         private int y;
 
-        private MutablePoint(int x, int y) {
+        private PointImpl(int x, int y) {
             this.x = x;
             this.y = y;
         }
@@ -254,9 +241,9 @@ public class InMemoryDataAccessorTest {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (o == null || !(o instanceof Point)) return false;
 
-            MutablePoint that = (MutablePoint) o;
+            Point that = (Point) o;
 
             if (getX() != that.getX()) return false;
             if (getY() != that.getY()) return false;
@@ -273,7 +260,7 @@ public class InMemoryDataAccessorTest {
 
         @Override
         public String toString() {
-            return "MutablePoint{" +
+            return "PointImpl{" +
                     "x=" + x +
                     ", y=" + y +
                     '}';

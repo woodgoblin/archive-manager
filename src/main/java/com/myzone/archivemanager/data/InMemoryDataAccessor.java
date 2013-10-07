@@ -135,7 +135,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
         public InMemoryTransaction() {
             localTransaction.set(this);
-            defaultContinue = () -> localTransaction.get();
+            defaultContinue = localTransaction::get;
             updated = new IdentityHashMap<>();
 
             lock.readLock().lock();
@@ -180,7 +180,7 @@ public class InMemoryDataAccessor<T> implements DataAccessor<T> {
 
         @Override
         public Continue<T> update(T o) {
-            localCache.put(o, localCache.get(o) + 1);
+            localCache.put(o, localCache.getOrDefault(o, Integer.MIN_VALUE) + 1);
             updated.put(o, true);
 
             return defaultContinue;
