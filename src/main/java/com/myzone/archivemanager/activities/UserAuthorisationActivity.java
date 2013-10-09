@@ -5,24 +5,20 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.services.UserAuthorizationService;
 import com.myzone.utils.LastStackFramePane;
-import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
-import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
@@ -46,7 +42,6 @@ public class UserAuthorisationActivity extends StatusActivity<Node> {
 
     private final Node authorizationForm;
     private final UserAuthorizationService userAuthorizationService;
-
     private CloseableSession session;
 
     public UserAuthorisationActivity(Core<? super Node, Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> core) {

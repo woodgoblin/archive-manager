@@ -32,7 +32,6 @@ public interface DataAccessor<T> {
 
     }
 
-
     public class DataModificationException extends Exception {
 
     }

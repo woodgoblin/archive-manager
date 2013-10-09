@@ -13,6 +13,7 @@ import com.myzone.archivemanager.model.User;
 import com.myzone.utils.RecursiveImmutableTuple;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,9 +67,13 @@ public class Application extends javafx.application.Application {
                 try {
                     core.unloadActivity(userAuthorisationActivity, rootPane, binder());
 
-                    Pane mainMenuPane = new Pane();
+                    Pane mainMenuPane = new StackPane();
+                    mainMenuPane.setMaxHeight(Double.MAX_VALUE);
+                    mainMenuPane.setMaxWidth(Double.MAX_VALUE);
+
                     Stage mainMenuStage = new Stage();
                     mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
+                    mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
 
                     MainMenuActivity menuActivity = new MainMenuActivity(core, userAuthorisationActivity.getSession());
                     core.loadActivity(menuActivity, mainMenuPane, binder());
