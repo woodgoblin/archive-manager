@@ -8,7 +8,7 @@ import com.myzone.archivemanager.model.User;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import static java.util.Optional.empty;
 
@@ -19,7 +19,7 @@ import static java.util.Optional.empty;
 public class UserAuthorizationService implements DataService<UserAuthorizationService.UserAuthorizationRequest, UserAuthorizationService.UserAuthorizationResponse, Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> {
 
     @Override
-    public void process(UserAuthorizationRequest request, @NotNull Function<? super UserAuthorizationResponse, Void> callback, @NotNull Core.ApplicationDataContext<? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> dataContext) {
+    public void process(UserAuthorizationRequest request, @NotNull Consumer<? super UserAuthorizationResponse> callback, @NotNull Core.ApplicationDataContext<? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> dataContext) {
         try {
             DataAccessor<User> usersUserDataAccessor = dataContext.getDataProvider().get();
             DataAccessor.Transaction<User> transaction = usersUserDataAccessor.beginTransaction();
@@ -31,7 +31,7 @@ public class UserAuthorizationService implements DataService<UserAuthorizationSe
             if (currentUser.isPresent()) {
                 User.CloseableSession closeableSession = currentUser.get().startSession(request.getPassword());
 
-                callback.apply(new UserAuthorizationResponse() {
+                callback.accept(new UserAuthorizationResponse() {
 
                     @Override
                     public Optional<User.CloseableSession> getSession() {
@@ -49,7 +49,7 @@ public class UserAuthorizationService implements DataService<UserAuthorizationSe
             }
             transaction.rollback();
         } catch (User.SessionStartFailedException e) {
-            callback.apply(new UserAuthorizationResponse() {
+            callback.accept(new UserAuthorizationResponse() {
 
                 @Override
                 public Optional<User.CloseableSession> getSession() {

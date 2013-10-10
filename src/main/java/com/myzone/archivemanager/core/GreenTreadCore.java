@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
@@ -22,7 +22,7 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     protected final DataContextProvider<D> dataContextProvider;
     protected final ProcessingContextProvider<?> processingContextProvider;
 
-    protected final Map<Service<?, ?>, Function<Runnable, Void>> executeOnFunctions;
+    protected final Map<Service<?, ?>, Consumer<Runnable>> executeOnFunctions;
     protected final ExecutorService executor;
 
 
@@ -78,27 +78,27 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
 
     @Override
     @SuppressWarnings("unchecked")
-    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback) {
-        Function<Runnable, Void> executeOn = executeOnFunctions.getOrDefault(service, (runnable) -> {
+    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Consumer<R> callback) {
+        Consumer<Runnable> executeOn = executeOnFunctions.getOrDefault(service, (runnable) -> {
             throw new RuntimeException("Unknown service " + service);
         });
 
-        Function<R, Void> threadSafeCallback = uiBinding.isUiThread() ? uiBinding.toUiCallback(callback) : callback;
+        Consumer<R> threadSafeCallback = uiBinding.isUiThread() ? uiBinding.toUiCallback(callback) : callback;
 
         if (service instanceof ProcessingService) {
             ProcessingService processingService = (ProcessingService) service; // todo: it's a dirty hack, should be fixed
 
-            executeOn.apply(() -> {
+            executeOn.accept(() -> {
                 try {
                     processingService.process(request, threadSafeCallback, processingContextProvider.provide(processingService));
                 } catch (ProcessingService.YieldException ignored) {
-                    // just yield has been happened
+                    // just yield has been happened, all is fine
                 }
             });
         } else if (service instanceof DataService) {
             DataService<? super A, ? extends R, ? super D> dataService = (DataService<? super A, ? extends R, ? super D>) service;
 
-            executeOn.apply(() -> dataService.process(request, threadSafeCallback, dataContextProvider.provide(dataService)));
+            executeOn.accept(() -> dataService.process(request, threadSafeCallback, dataContextProvider.provide(dataService)));
         } else {
             throw new RuntimeException("Unknown service " + service);
         }
@@ -116,11 +116,7 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
 
     @Override
     public <A, R, S> void loadService(@NotNull ProcessingService<A, R, S> service) {
-        executeOnFunctions.putIfAbsent(service, runnable -> {
-            executor.submit(runnable);
-
-            return null;
-        });
+        executeOnFunctions.putIfAbsent(service, executor::submit);
 
         service.onLoad(this);
     }
@@ -136,11 +132,7 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     public <A, R> void loadService(@NotNull DataService<A, R, ? super D> service) {
         ExecutorService privateExecutor = newSingleThreadExecutor();
 
-        executeOnFunctions.put(service, runnable -> {
-            privateExecutor.submit(runnable);
-
-            return null;
-        });
+        executeOnFunctions.put(service, privateExecutor::submit);
 
         service.onLoad(this);
     }
@@ -154,10 +146,10 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
 
     protected static abstract class GreenThreadProcessingContext<A, R, S> implements ScheduledProcessingContext<A, R, S> {
 
+        private static final ProcessingService.YieldException YIELD_EXCEPTION = new ProcessingService.YieldException();
+
         private final GreenTreadCore<?, ?> greenTreadCore;
         private final ProcessingService<A, R, S> processingService;
-
-        private ProcessingService.YieldException yieldException;
 
         protected GreenThreadProcessingContext(
                 @NotNull GreenTreadCore<?, ?> greenTreadCore,
@@ -168,14 +160,10 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
         }
 
         @Override
-        public void yield(A request, @NotNull Function<? super R, Void> callback) throws ProcessingService.YieldException {
+        public void yield(A request, @NotNull Consumer<? super R> callback) throws ProcessingService.YieldException {
             greenTreadCore.executor.submit(() -> processingService.process(request, callback, this));
 
-            if (yieldException == null) {
-                yieldException = new ProcessingService.YieldException();
-            }
-
-            throw yieldException;
+            throw YIELD_EXCEPTION;
         }
 
     }

@@ -5,7 +5,7 @@ import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -58,7 +58,7 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
     }
 
     @Override
-    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback) {
+    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Consumer<R> callback) {
         underlyingCore.processRequest(service, request, callback);
     }
 

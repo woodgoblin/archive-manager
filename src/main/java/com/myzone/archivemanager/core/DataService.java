@@ -2,7 +2,7 @@ package com.myzone.archivemanager.core;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -10,7 +10,7 @@ import java.util.function.Function;
  */
 public interface DataService<A, R, D> extends Service<A, R> {
 
-    void process(A request, @NotNull Function<? super R, Void> callback, @NotNull Core.ApplicationDataContext<? extends D> dataContext);
+    void process(A request, @NotNull Consumer<? super R> callback, @NotNull Core.ApplicationDataContext<? extends D> dataContext);
 
     void onLoad(@NotNull Core<?, ? extends D> core);
 

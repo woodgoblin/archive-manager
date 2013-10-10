@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 import static com.myzone.archivemanager.core.JavaFxBasedCore.binder;
 import static com.myzone.archivemanager.model.User.CloseableSession;
@@ -130,12 +130,10 @@ public class UserAuthorisationActivity extends StatusActivity<Node> {
                         if (sessionOptional.isPresent()) {
                             session = sessionOptional.get();
 
-                            System.out.println("Logined " + session.getSessionOwner());
+                            System.out.println("Logined " + session.getOwner());
                             registerBtn.setDisable(true);
                             schedule(() -> runLater(() -> status.set(Status.DONE)), 1, TimeUnit.SECONDS);
                         }
-
-                        return null;
                     }
             );
         });
@@ -162,7 +160,7 @@ public class UserAuthorisationActivity extends StatusActivity<Node> {
         return grid;
     }
 
-    protected void login(String username, String password, Function<UserAuthorizationService.UserAuthorizationResponse, Void> callback) {
+    protected void login(String username, String password, Consumer<UserAuthorizationService.UserAuthorizationResponse> callback) {
         core.processRequest(userAuthorizationService, new UserAuthorizationService.UserAuthorizationRequest() {
 
             @Override

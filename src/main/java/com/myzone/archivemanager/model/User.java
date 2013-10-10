@@ -38,7 +38,7 @@ public interface User {
     interface AuthorizedSession extends Session {
 
         @NotNull
-        User getSessionOwner();
+        User getOwner();
 
     }
 

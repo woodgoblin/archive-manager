@@ -1,9 +1,9 @@
 package com.myzone.archivemanager.model;
 
-import com.google.common.collect.ImmutableSortedSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Clock;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.SortedSet;
 
 import static com.myzone.archivemanager.model.User.AuthorizedSession;
@@ -34,13 +34,16 @@ public interface Document<C> {
 
     boolean isCommentableBy(@NotNull User user);
 
-    interface Revision<C> {
+    interface Revision<C> extends Comparable<Revision<C>> {
+
+        @NotNull
+        Document<C> getDocument();
 
         @NotNull
         User getAuthor();
 
         @NotNull
-        Clock getCreationTime();
+        Instant getCreationTime();
 
         @NotNull
         SortedSet<Comment> getComments();
@@ -49,25 +52,55 @@ public interface Document<C> {
 
         void commentFor(@NotNull AuthorizedSession authorizedSession, @NotNull Comment cause, @NotNull String commentText);
 
-        void removeComment(@NotNull AuthorizedSession authorizedSession, @NotNull String commentText);
+        void removeComment(@NotNull AuthorizedSession authorizedSession, @NotNull Comment comment);
 
         C getContent();
 
+        default int compareTo(Revision<C> other) {
+            return Comparators.BY_CREATION_TIME.compare(this, other);
+        }
+
+        enum Comparators implements Comparator<Revision<?>> {
+
+            BY_CREATION_TIME;
+
+            @Override
+            public int compare(Revision<?> left, Revision<?> right) {
+                return left.getCreationTime().compareTo(right.getCreationTime());
+            }
+
+        }
+
     }
 
-    interface Comment {
+    interface Comment extends Comparable<Comment> {
 
         @NotNull
         User getAuthor();
 
         @NotNull
-        Clock getCreationTime();
+        Instant getCreationTime();
 
         @NotNull
         String getText();
 
         @NotNull
         SortedSet<Comment> getAnswers();
+
+        default int compareTo(Comment other) {
+            return Comparators.BY_CREATION_TIME.compare(this, other);
+        }
+
+        enum Comparators implements Comparator<Comment> {
+
+            BY_CREATION_TIME;
+
+            @Override
+            public int compare(Comment left, Comment right) {
+                return left.getCreationTime().compareTo(right.getCreationTime());
+            }
+
+        }
 
     }
 

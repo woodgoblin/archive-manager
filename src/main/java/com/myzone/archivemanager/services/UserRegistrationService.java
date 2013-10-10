@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Clock;
 import java.util.SortedSet;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -21,7 +21,7 @@ import java.util.function.Function;
 public class UserRegistrationService implements DataService<UserRegistrationService.UserRegistrationRequest, UserRegistrationService.UserRegistrationResponse, Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> {
 
     @Override
-    public void process(UserRegistrationRequest request, @NotNull Function<? super UserRegistrationResponse, Void> callback, @NotNull Core.ApplicationDataContext<? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> dataContext) {
+    public void process(UserRegistrationRequest request, @NotNull Consumer<? super UserRegistrationResponse> callback, @NotNull Core.ApplicationDataContext<? extends Core.DataProvider<User, Core.DataProvider<Document, Core.DataProvider.DataProviderEnd>>> dataContext) {
         try {
             DataAccessor<User> usersUserDataAccessor = dataContext.getDataProvider().get();
             DataAccessor.Transaction<User> transaction = usersUserDataAccessor.beginTransaction();
@@ -34,12 +34,12 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
                 transaction.save(newUser);
                 transaction.commit();
 
-                callback.apply((UserRegistrationResponse) () -> newUser);
+                callback.accept((UserRegistrationResponse) () -> newUser);
             } finally {
                 transaction.rollback();
             }
         } catch (Exception e) {
-            callback.apply((UserRegistrationResponse) () -> null);
+            callback.accept((UserRegistrationResponse) () -> null);
         }
     }
 
@@ -111,7 +111,7 @@ public class UserRegistrationService implements DataService<UserRegistrationServ
 
                 @NotNull
                 @Override
-                public User getSessionOwner() {
+                public User getOwner() {
                     return SimpleUser.this;
                 }
 

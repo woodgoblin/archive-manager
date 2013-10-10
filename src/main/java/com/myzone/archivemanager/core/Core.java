@@ -4,7 +4,7 @@ import com.myzone.archivemanager.data.DataAccessor;
 import com.myzone.utils.ImmutableTuple;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -12,7 +12,7 @@ import java.util.function.Function;
  */
 public interface Core<N, D extends Core.DataProvider> {
 
-    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Function<R, Void> callback);
+    public <A, R> void processRequest(@NotNull Service<? super A, ? extends R> service, A request, @NotNull Consumer<R> callback);
 
     public <R> void loadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder);
 
@@ -55,7 +55,7 @@ public interface Core<N, D extends Core.DataProvider> {
 
         void setState(S state);
 
-        void yield(A request, @NotNull Function<? super R, Void> callback) throws ProcessingService.YieldException;
+        void yield(A request, @NotNull Consumer<? super R> callback) throws ProcessingService.YieldException;
 
     }
 

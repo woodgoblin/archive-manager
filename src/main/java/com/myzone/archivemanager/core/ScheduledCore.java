@@ -2,7 +2,7 @@ package com.myzone.archivemanager.core;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -17,14 +17,8 @@ public interface ScheduledCore<N, D extends Core.DataProvider> extends Core<N, D
         void runOnUiThread(@NotNull Runnable runnable);
 
         @NotNull
-        default <T> Function<T, Void> toUiCallback(@NotNull Function<T, Void> callback) {
-            return arg -> {
-                runOnUiThread(() -> {
-                    callback.apply(arg);
-                });
-
-                return null;
-            };
+        default <T> Consumer<T> toUiCallback(@NotNull Consumer<T> callback) {
+            return arg -> runOnUiThread(() -> callback.accept(arg));
         }
 
     }
@@ -70,7 +64,7 @@ public interface ScheduledCore<N, D extends Core.DataProvider> extends Core<N, D
         public abstract void setState(S state);
 
         @Override
-        public abstract void yield(A request, @NotNull Function<? super R, Void> callback) throws ProcessingService.YieldException;
+        public abstract void yield(A request, @NotNull Consumer<? super R> callback) throws ProcessingService.YieldException;
 
     }
 

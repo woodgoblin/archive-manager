@@ -35,6 +35,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.myzone.utils.TaskScheduler.schedule;
@@ -128,8 +129,6 @@ public class UserRegistrationActivity extends StatusActivity<Node>{
                         }
 
                         registerBtn.setDisable(true);
-
-                        return null;
                     }
             );
         });
@@ -156,7 +155,7 @@ public class UserRegistrationActivity extends StatusActivity<Node>{
         return grid;
     }
 
-    protected void register(String username, String password, Function<UserRegistrationService.UserRegistrationResponse, Void> callback) {
+    protected void register(String username, String password, Consumer<UserRegistrationService.UserRegistrationResponse> callback) {
         core.processRequest(registrationService, new UserRegistrationService.UserRegistrationRequest() {
             @Override
             public String getPreferredUsername() {

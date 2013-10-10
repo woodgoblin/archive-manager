@@ -4,7 +4,7 @@ import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.core.ProcessingService;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /**
  * @author myzone
@@ -15,7 +15,7 @@ public class ConcatService implements ProcessingService<String[], String, Concat
     @Override
     public void process(
             String[] request,
-            @NotNull Function<? super String, Void> callback,
+            @NotNull Consumer<? super String> callback,
             @NotNull Core.ApplicationProcessingContext<? super String[], ? extends String, ConcatState> processingContext
     ) throws YieldException {
         if (processingContext.getState() == null) {
@@ -28,7 +28,7 @@ public class ConcatService implements ProcessingService<String[], String, Concat
         state.setStep(state.getStep() + 1);
 
         if (state.getStep() == request.length) {
-            callback.apply(state.getResultBuilder().toString());
+            callback.accept(state.getResultBuilder().toString());
         } else {
             processingContext.yield(request, callback);
         }
