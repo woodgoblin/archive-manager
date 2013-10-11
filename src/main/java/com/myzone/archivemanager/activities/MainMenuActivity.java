@@ -1,19 +1,20 @@
 package com.myzone.archivemanager.activities;
 
 import com.myzone.archivemanager.core.Core;
-import com.myzone.archivemanager.core.Service;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
+import com.myzone.archivemanager.model.simple.SimpleDocument;
+import com.myzone.archivemanager.services.ContentRenderingService;
 import javafx.geometry.*;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Optional;
-import java.util.SortedSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -24,18 +25,21 @@ public class MainMenuActivity extends StatusActivity<Node> {
 
     private final Core<? super Node, ?> core;
     private final User.CloseableSession session;
+    private final ContentRenderingService contentRenderingService;
+
     private final SplitPane rootPane;
 
     private Label nicknameLabel;
     private Button logoutButton;
     private TextField documentsSearchTextField;
     private Button createNewDocumentButton;
-    private TreeView<DocumentTreeNode<?>> documentTreeView;
+    private TreeView<DocumentTreeNode> documentTreeView;
     private TabPane tabsView;
 
-    public MainMenuActivity(Core<? super Node, ?> core, User.CloseableSession session) {
+    public MainMenuActivity(Core<? super Node, ?> core, User.CloseableSession session, ContentRenderingService contentRenderingService) {
         this.core = core;
         this.session = session;
+        this.contentRenderingService = contentRenderingService;
 
         nicknameLabel = new Label();
         nicknameLabel.setText(session.getOwner().getUsername());
@@ -64,50 +68,45 @@ public class MainMenuActivity extends StatusActivity<Node> {
         documentTreeView = new TreeView<>();
         documentTreeView.setMaxHeight(Double.MAX_VALUE);
         documentTreeView.setShowRoot(false);
-        documentTreeView.setCellFactory(new Callback<TreeView<DocumentTreeNode<?>>, TreeCell<DocumentTreeNode<?>>>() {
+        documentTreeView.setCellFactory(new Callback<TreeView<DocumentTreeNode>, TreeCell<DocumentTreeNode>>() {
             @Override
-            public TreeCell<DocumentTreeNode<?>> call(TreeView<DocumentTreeNode<?>> documentTreeNodeTreeView) {
-                return new TreeCell<DocumentTreeNode<?>>() {
-
+            public TreeCell<DocumentTreeNode> call(TreeView<DocumentTreeNode> documentTreeNodeTreeView) {
+                return new TextFieldTreeCell<>(new StringConverter<DocumentTreeNode>() {
                     @Override
-                    protected void updateItem(DocumentTreeNode<?> node, boolean empty) {
-                        super.updateItem(node, empty);
+                    public String toString(DocumentTreeNode node) {
+                        if (node.isDocument()) {
+                            return node.getDocument().getName();
+                        } else if (node.isRevision()) {
+                            Document.Revision revision = node.getRevision();
 
-                        if (empty) {
-                            setText(null);
+                            return revision.getAuthor().getUsername() + " @ " + revision.getCreationTime().toString();
                         } else {
-                            if (node.isDocument()) {
-                                Document<?> document = node.getDocument();
-
-                                setText(document.getName());
-                            } else if (node.isRevision()) {
-                                Document.Revision<?> revision = node.getRevision();
-
-                                setText(revision.getCreationTime().toString());
-                                setTextFill(revision.getAuthor().equals(session.getOwner()) ? Color.DARKGRAY : Color.BLACK);
-                            }
+                            return "root";
                         }
                     }
 
                     @Override
-                    public void startEdit() {
-                        // do nothing
+                    public DocumentTreeNode fromString(String s) {
+                        return null;
                     }
 
-                };
+                });
             }
         });
-        documentTreeView.setOnEditStart(event -> {
-            DocumentTreeNode<?> currentNode = event.getTreeItem().getValue();
+        documentTreeView.setRoot(new TreeItem<DocumentTreeNode>(new DocumentTreeNode<>()));
+        documentTreeView.setOnMouseClicked((event) -> {
+            if (event.getClickCount() > 1) {
+                DocumentTreeNode currentNode = documentTreeView.getSelectionModel().getSelectedItems().get(0).getValue();
 
-            if (currentNode.isDocument()) {
-                SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(session);
+                if (currentNode.isDocument()) {
+                    SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(session);
 
-                if (!revisions.isEmpty()) {
-                    createTab(revisions.last());
+                    if (!revisions.isEmpty()) {
+                        tabsView.getTabs().add(createTab(revisions.last()));
+                    }
+                } else if (currentNode.isRevision()) {
+                    tabsView.getTabs().add(createTab(currentNode.getRevision()));
                 }
-            } else if (currentNode.isRevision()) {
-                createTab(currentNode.getRevision());
             }
         });
 
@@ -156,7 +155,43 @@ public class MainMenuActivity extends StatusActivity<Node> {
 
         graphicsContext.bind(rootPane);
 
-//        tabsView.getTabs().add(createTab());
+        SimpleDocument simpleDocument = new SimpleDocument<String>(
+                "u suck",
+                session.getOwner(),
+                "u suck, bitch!!!",
+                Document.ContentType.StringContentType.INSTANCE,
+                () -> "bullshit"
+        );
+
+        Document.Revision r = (Document.Revision) simpleDocument.getRevisions(session).last();
+        r.comment(session, "U2, motherfucker!!!");
+
+
+        Set<SimpleDocument<?>> documents = new HashSet<>();
+        documents.add(simpleDocument);
+
+        List<TreeItem<DocumentTreeNode>> documentsTreeItems = documents
+                .stream()
+                .map(document -> {
+                    TreeItem<DocumentTreeNode> treeItem = new TreeItem<>(new DocumentTreeNode(document));
+
+                    // todo fix this holy shit about generics
+                    List<TreeItem<DocumentTreeNode>> revisionTreeItems = document
+                            .getRevisions(session)
+                            .stream()
+                            .map((revision) -> new DocumentTreeNode(revision))
+                            .map(TreeItem::new)
+                            .collect(Collectors.toList());
+
+                    treeItem.getChildren().setAll(revisionTreeItems);
+
+                    return treeItem;
+                })
+                .collect(Collectors.toList());
+
+        documentTreeView.getRoot().getChildren().setAll(documentsTreeItems);
+
+//        tabsView.getTabs().add();
     }
 
     @Override
@@ -166,19 +201,13 @@ public class MainMenuActivity extends StatusActivity<Node> {
         super.onUnload(graphicsContext);
     }
 
-    private Tab createTab(@NotNull Document.Revision<?> revision) {
-        return new Tab();
-    }
-
-    private <T> Tab createTab(@NotNull Document.Revision<T> revision,@NotNull Service<T, Node> rendererService) {
+    private <T> Tab createTab(@NotNull Document.Revision<T> revision) {
         Tab result = new Tab();
 
-        VBox tabRoot = new VBox();
-
         StackPane documentContentViewWrapper = new StackPane();
-        tabRoot.setMaxHeight(Double.MAX_VALUE);
-        tabRoot.setMaxWidth(Double.MAX_VALUE);
-        tabRoot.getChildren().add(
+        documentContentViewWrapper.setMaxHeight(Double.MAX_VALUE);
+        documentContentViewWrapper.setMaxWidth(Double.MAX_VALUE);
+        documentContentViewWrapper.getChildren().add(
                 StackPaneBuilder
                         .create()
                         .prefHeight(120)
@@ -187,13 +216,41 @@ public class MainMenuActivity extends StatusActivity<Node> {
                         .build()
         );
 
-//        core.processRequest(rendererService, revision.getContent(), (documentContentView) -> {
-//            tabRoot.getChildren().clear();
-//            tabRoot.getChildren().add(documentContentView);
-//        });
+        core.processRequest(contentRenderingService, new ContentRenderingService.Request<T>() {
+
+            @NotNull
+            @Override
+            public Document.ContentType<T> getContentType() {
+                return revision.getDocument().getContentType();
+            }
+
+            @NotNull
+            @Override
+            public T getContent() {
+                return revision.getContent();
+            }
+
+        }, (response) -> {
+            response.getResult().ifPresent(documentContentViewWrapper.getChildren()::setAll);
+        });
 
         GridPane documentMetadataView = new GridPane();
-        documentMetadataView.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY,new CornerRadii(1), new Insets(-50, -10, 100, 20))));
+        Label authorLabel = new Label();
+        authorLabel.setText(revision.getAuthor().getUsername());
+
+        Label authorTextLabel = new Label();
+        authorTextLabel.setText("Author");
+        authorTextLabel.setLabelFor(authorLabel);
+
+        Label creationTimeLabel = new Label();
+        creationTimeLabel.setText(revision.getCreationTime().toString());
+
+        Label creationTimeTextLabel = new Label();
+        creationTimeTextLabel.setText("Creation time");
+        creationTimeTextLabel.setLabelFor(creationTimeLabel);
+
+        documentMetadataView.addRow(0, authorTextLabel, authorLabel);
+        documentMetadataView.addRow(1, creationTimeTextLabel, creationTimeLabel);
 
         VBox commentsView = new VBox();
         commentsView.setFillWidth(true);
@@ -229,17 +286,20 @@ public class MainMenuActivity extends StatusActivity<Node> {
                         .collect(Collectors.<Node>toList())
         );
 
+        VBox tabRoot = new VBox();
         tabRoot.setFillWidth(true);
         tabRoot.setMaxHeight(Double.MAX_VALUE);
         tabRoot.getChildren().add(documentContentViewWrapper);
+        tabRoot.getChildren().add(horizontalSeparator());
         tabRoot.getChildren().add(documentMetadataView);
+        tabRoot.getChildren().add(horizontalSeparator());
         tabRoot.getChildren().add(commentsView);
 
         result.setText(revision.getDocument().getName());
         result.setDisable(false);
         result.setClosable(true);
         result.setContent(tabRoot);
-        
+
         return result;
     }
 
@@ -256,6 +316,11 @@ public class MainMenuActivity extends StatusActivity<Node> {
 
         private final Optional<Document.Revision<T>> revision;
 
+        private DocumentTreeNode() {
+            this.document = Optional.empty();
+            this.revision = Optional.empty();
+        }
+
         private DocumentTreeNode(@NotNull Document<T> document) {
             this.document = Optional.of(document);
             this.revision = Optional.empty();
@@ -264,6 +329,10 @@ public class MainMenuActivity extends StatusActivity<Node> {
         private DocumentTreeNode(@NotNull Document.Revision<T> revision) {
             this.document = Optional.empty();
             this.revision = Optional.of(revision);
+        }
+
+        public boolean isRoot() {
+            return !isDocument() && !isRevision();
         }
 
         public boolean isDocument() {

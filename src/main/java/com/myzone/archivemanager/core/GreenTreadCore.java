@@ -25,7 +25,6 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     protected final Map<Service<?, ?>, Consumer<Runnable>> executeOnFunctions;
     protected final ExecutorService executor;
 
-
     public GreenTreadCore(
             @NotNull UiBinding<? extends N> uiBinding,
             @NotNull GraphicsContextProvider<N> graphicsContextProvider,

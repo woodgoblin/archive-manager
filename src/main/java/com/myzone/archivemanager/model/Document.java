@@ -2,9 +2,11 @@ package com.myzone.archivemanager.model;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.SortedSet;
+import java.util.NavigableSet;
+import java.util.Optional;
 
 import static com.myzone.archivemanager.model.User.AuthorizedSession;
 
@@ -18,13 +20,13 @@ public interface Document<C> {
     String getName();
 
     @NotNull
-    ContentType getContentType();
+    ContentType<C> getContentType();
 
     @NotNull
     DocumentType getDocumentType();
 
     @NotNull
-    SortedSet<Revision<C>> getRevisions(@NotNull AuthorizedSession authorizedSession);
+    NavigableSet<Revision<C>> getRevisions(@NotNull AuthorizedSession authorizedSession);
 
     void updateBy(@NotNull AuthorizedSession authorizedSession, C content);
 
@@ -46,7 +48,7 @@ public interface Document<C> {
         Instant getCreationTime();
 
         @NotNull
-        SortedSet<Comment> getComments();
+        NavigableSet<Comment> getComments();
 
         void comment(@NotNull AuthorizedSession authorizedSession, @NotNull String commentText);
 
@@ -85,7 +87,10 @@ public interface Document<C> {
         String getText();
 
         @NotNull
-        SortedSet<Comment> getAnswers();
+        Optional<Comment> getCause();
+
+        @NotNull
+        NavigableSet<Comment> getAnswers();
 
         default int compareTo(Comment other) {
             return Comparators.BY_CREATION_TIME.compare(this, other);
@@ -111,10 +116,49 @@ public interface Document<C> {
 
     }
 
-    enum ContentType {
+    interface ContentType<T> {
 
-        FILE,
-        UNKNOWN;
+        @NotNull
+        String getName();
+
+        @NotNull
+        Class<T> contentsClass();
+
+        enum StringContentType implements ContentType<String> {
+
+            INSTANCE;
+
+            @NotNull
+            @Override
+            public String getName() {
+                return "Text";
+            }
+
+            @NotNull
+            @Override
+            public Class<String> contentsClass() {
+                return String.class;
+            }
+
+        }
+
+        enum FileContentType implements ContentType<File> {
+
+            INSTANCE;
+
+            @NotNull
+            @Override
+            public String getName() {
+                return "File";
+            }
+
+            @NotNull
+            @Override
+            public Class<File> contentsClass() {
+                return File.class;
+            }
+
+        }
 
     }
 

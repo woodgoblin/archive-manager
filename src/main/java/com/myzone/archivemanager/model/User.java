@@ -3,8 +3,8 @@ package com.myzone.archivemanager.model;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Clock;
-import java.util.SortedSet;
+import java.time.Instant;
+import java.util.NavigableSet;
 
 /**
  * @author myzone
@@ -20,7 +20,7 @@ public interface User {
     void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword);
 
     @NotNull
-    SortedSet<Session> getSessions();
+    NavigableSet<Session> getSessions();
 
     @NotNull
     CloseableSession startSession(@NotNull String password) throws SessionStartFailedException;
@@ -28,10 +28,10 @@ public interface User {
     interface Session {
 
         @NotNull
-        Clock getBegin();
+        Instant getBegin();
 
-        @Nullable
-        Clock getEnd();
+        @NotNull
+        Instant getEnd();
 
     }
 

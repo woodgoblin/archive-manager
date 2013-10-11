@@ -10,6 +10,8 @@ import com.myzone.archivemanager.data.DataAccessor;
 import com.myzone.archivemanager.data.InMemoryDataAccessor;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
+import com.myzone.archivemanager.model.simple.SimpleUser;
+import com.myzone.archivemanager.services.ContentRenderingService;
 import com.myzone.utils.RecursiveImmutableTuple;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -75,7 +77,9 @@ public class Application extends javafx.application.Application {
                     mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
                     mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
 
-                    MainMenuActivity menuActivity = new MainMenuActivity(core, userAuthorisationActivity.getSession());
+                    ContentRenderingService contentRenderingService = new ContentRenderingService();
+                    MainMenuActivity menuActivity = new MainMenuActivity(core, userAuthorisationActivity.getSession(), contentRenderingService);
+                    core.loadService(contentRenderingService);
                     core.loadActivity(menuActivity, mainMenuPane, binder());
 
                     mainMenuStage.show();
@@ -86,6 +90,24 @@ public class Application extends javafx.application.Application {
             }
         });
         core.loadActivity(userAuthorisationActivity, rootPane, binder());
+
+        core.unloadActivity(userAuthorisationActivity, rootPane, binder());
+
+        Pane mainMenuPane = new StackPane();
+        mainMenuPane.setMaxHeight(Double.MAX_VALUE);
+        mainMenuPane.setMaxWidth(Double.MAX_VALUE);
+
+        Stage mainMenuStage = new Stage();
+        mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
+        mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
+
+        ContentRenderingService contentRenderingService = new ContentRenderingService();
+        MainMenuActivity menuActivity = new MainMenuActivity(core, new SimpleUser("myzone", "").startSession(""), contentRenderingService);
+        core.loadService(contentRenderingService);
+        core.loadActivity(menuActivity, mainMenuPane, binder());
+
+        mainMenuStage.show();
+        stage.hide();
 
         stage.setOnCloseRequest(e -> System.exit(0));
         runLater(stage::show);
