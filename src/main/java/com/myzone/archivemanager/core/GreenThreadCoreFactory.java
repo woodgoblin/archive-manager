@@ -11,11 +11,10 @@ public class GreenThreadCoreFactory<N, D extends Core.DataProvider> implements S
     @NotNull
     @Override
     public ScheduledCore<N, D> create(
-            @NotNull ScheduledCore.UiBinding<? extends N> uiBinding,
             @NotNull ScheduledCore.GraphicsContextProvider<N> graphicsContextProvider,
             @NotNull ScheduledCore.DataContextProvider<D> dataContextProvider
     ) {
-        return new GreenTreadCore<>(uiBinding, graphicsContextProvider, dataContextProvider);
+        return new GreenTreadCore<>(graphicsContextProvider, dataContextProvider);
     }
 
 }

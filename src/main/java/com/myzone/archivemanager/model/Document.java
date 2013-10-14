@@ -1,11 +1,11 @@
 package com.myzone.archivemanager.model;
 
+import com.myzone.utils.ObservableNavigableSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.NavigableSet;
 import java.util.Optional;
 
 import static com.myzone.archivemanager.model.User.AuthorizedSession;
@@ -26,7 +26,7 @@ public interface Document<C> {
     DocumentType getDocumentType();
 
     @NotNull
-    NavigableSet<Revision<C>> getRevisions(@NotNull AuthorizedSession authorizedSession);
+    ObservableNavigableSet<Revision<C>> getRevisions(@NotNull AuthorizedSession authorizedSession);
 
     void updateBy(@NotNull AuthorizedSession authorizedSession, C content);
 
@@ -48,7 +48,7 @@ public interface Document<C> {
         Instant getCreationTime();
 
         @NotNull
-        NavigableSet<Comment> getComments();
+        ObservableNavigableSet<Comment> getComments();
 
         void comment(@NotNull AuthorizedSession authorizedSession, @NotNull String commentText);
 
@@ -90,7 +90,7 @@ public interface Document<C> {
         Optional<Comment> getCause();
 
         @NotNull
-        NavigableSet<Comment> getAnswers();
+        ObservableNavigableSet<Comment> getAnswers();
 
         default int compareTo(Comment other) {
             return Comparators.BY_CREATION_TIME.compare(this, other);

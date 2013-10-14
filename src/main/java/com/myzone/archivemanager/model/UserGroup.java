@@ -1,8 +1,7 @@
 package com.myzone.archivemanager.model;
 
+import javafx.collections.ObservableSet;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Set;
 
 /**
  * @author myzone
@@ -15,6 +14,6 @@ public interface UserGroup {
     void disrank(@NotNull User.AuthorizedSession session, @NotNull User targetUser);
 
     @NotNull
-    Set<User> getUsers();
+    ObservableSet<User> getUsers();
 
 }

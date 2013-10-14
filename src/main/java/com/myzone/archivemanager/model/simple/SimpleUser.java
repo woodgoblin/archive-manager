@@ -2,12 +2,13 @@ package com.myzone.archivemanager.model.simple;
 
 import com.google.common.base.Objects;
 import com.myzone.archivemanager.model.User;
+import com.myzone.utils.ObservableNavigableSet;
+import com.myzone.utils.ObservableNavigableSetWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.NavigableSet;
 
 /**
  * @author myzone
@@ -43,8 +44,8 @@ public class SimpleUser implements User {
 
     @NotNull
     @Override
-    public NavigableSet<Session> getSessions() {
-        return Collections.emptyNavigableSet(); // temporary @fixme
+    public ObservableNavigableSet<Session> getSessions() {
+        return new ObservableNavigableSetWrapper<>(Collections.emptyNavigableSet()); // temporary @fixme
     }
 
     @NotNull

@@ -12,12 +12,17 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.model.simple.SimpleUser;
 import com.myzone.archivemanager.services.ContentRenderingService;
+import com.myzone.archivemanager.services.GlobalsService;
 import com.myzone.utils.RecursiveImmutableTuple;
+import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.NotNull;
+
+import java.time.Clock;
+import java.util.Optional;
 
 import static com.myzone.archivemanager.core.Core.ApplicationDataContext;
 import static com.myzone.archivemanager.core.Core.DataProvider;
@@ -63,6 +68,9 @@ public class Application extends javafx.application.Application {
                 }
         );
 
+        GlobalsService globalsService = new GlobalsService(Optional.<User.CloseableSession>empty(), Clock.systemDefaultZone());
+        core.loadService(globalsService);
+
         UserAuthorisationActivity userAuthorisationActivity = new UserAuthorisationActivity(core);
         userAuthorisationActivity.getStatus().addListener((observableValue, oldStatus, newStatus) -> {
             if (newStatus == StatusActivity.Status.DONE) {
@@ -78,7 +86,7 @@ public class Application extends javafx.application.Application {
                     mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
 
                     ContentRenderingService contentRenderingService = new ContentRenderingService();
-                    MainMenuActivity menuActivity = new MainMenuActivity(core, userAuthorisationActivity.getSession(), contentRenderingService);
+                    MainMenuActivity menuActivity = new MainMenuActivity(core, globalsService, contentRenderingService);
                     core.loadService(contentRenderingService);
                     core.loadActivity(menuActivity, mainMenuPane, binder());
 
@@ -90,24 +98,31 @@ public class Application extends javafx.application.Application {
             }
         });
         core.loadActivity(userAuthorisationActivity, rootPane, binder());
+        core.processRequest(globalsService, null, (GlobalsService.Globals globals) -> {
+            Platform.runLater(() -> {
+                core.unloadActivity(userAuthorisationActivity, rootPane, binder());
 
-        core.unloadActivity(userAuthorisationActivity, rootPane, binder());
+                Pane mainMenuPane = new StackPane();
+                mainMenuPane.setMaxHeight(Double.MAX_VALUE);
+                mainMenuPane.setMaxWidth(Double.MAX_VALUE);
 
-        Pane mainMenuPane = new StackPane();
-        mainMenuPane.setMaxHeight(Double.MAX_VALUE);
-        mainMenuPane.setMaxWidth(Double.MAX_VALUE);
+                Stage mainMenuStage = new Stage();
+                mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
+                mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
+                try {
+                    globals.getCurrentSession().setValue(Optional.of(new SimpleUser("myzone", "").startSession("")));
+                } catch (User.SessionStartFailedException e) {
+                }
 
-        Stage mainMenuStage = new Stage();
-        mainMenuStage.setScene(new Scene(mainMenuPane, 1200, 800));
-        mainMenuStage.setOnCloseRequest(e -> System.exit(0)); // @todo: remove this
+                ContentRenderingService contentRenderingService = new ContentRenderingService();
+                MainMenuActivity menuActivity = new MainMenuActivity(core, globalsService, contentRenderingService);
+                core.loadService(contentRenderingService);
+                core.loadActivity(menuActivity, mainMenuPane, binder());
 
-        ContentRenderingService contentRenderingService = new ContentRenderingService();
-        MainMenuActivity menuActivity = new MainMenuActivity(core, new SimpleUser("myzone", "").startSession(""), contentRenderingService);
-        core.loadService(contentRenderingService);
-        core.loadActivity(menuActivity, mainMenuPane, binder());
-
-        mainMenuStage.show();
-        stage.hide();
+                mainMenuStage.show();
+                stage.hide();
+            });
+        });
 
         stage.setOnCloseRequest(e -> System.exit(0));
         runLater(stage::show);

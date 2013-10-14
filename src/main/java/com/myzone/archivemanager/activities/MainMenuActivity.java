@@ -5,17 +5,25 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.model.simple.SimpleDocument;
 import com.myzone.archivemanager.services.ContentRenderingService;
+import com.myzone.archivemanager.services.GlobalsService;
+import com.myzone.utils.SynchronizedConsumer;
+import javafx.application.Platform;
 import javafx.geometry.*;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 /**
  * @author myzone
@@ -23,11 +31,16 @@ import java.util.stream.Collectors;
  */
 public class MainMenuActivity extends StatusActivity<Node> {
 
+    private static final Color INVERSE_BACKGROUND_COLOR = Color.DARKGRAY;
+    private static final Color INVERSE_FOREGROUND_COLOR = Color.GHOSTWHITE;
+
     private final Core<? super Node, ?> core;
-    private final User.CloseableSession session;
     private final ContentRenderingService contentRenderingService;
 
-    private final SplitPane rootPane;
+    private final GlobalsService.Globals globals;
+    private final ScheduledExecutorService scheduler;
+
+    private SplitPane rootPane;
 
     private Label nicknameLabel;
     private Button logoutButton;
@@ -36,13 +49,39 @@ public class MainMenuActivity extends StatusActivity<Node> {
     private TreeView<DocumentTreeNode> documentTreeView;
     private TabPane tabsView;
 
-    public MainMenuActivity(Core<? super Node, ?> core, User.CloseableSession session, ContentRenderingService contentRenderingService) {
+    public MainMenuActivity(Core<? super Node, ?> core, GlobalsService globalsService, ContentRenderingService contentRenderingService) {
         this.core = core;
-        this.session = session;
         this.contentRenderingService = contentRenderingService;
 
+        SynchronizedConsumer<GlobalsService.Globals> globalsConsumer = new SynchronizedConsumer<>();
+        core.processRequest(globalsService, null, globalsConsumer);
+        globals = globalsConsumer.get();
+        scheduler = newSingleThreadScheduledExecutor();
+
+        initUi();
+    }
+
+    @Override
+    public void onLoad(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
+        super.onLoad(graphicsContext);
+
+        graphicsContext.bind(rootPane);
+
+        fillWithData(globals.getCurrentSession().getValue().get());
+    }
+
+    @Override
+    public void onUnload(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
+        graphicsContext.unbind(rootPane);
+
+        super.onUnload(graphicsContext);
+    }
+
+    private void initUi() {
+        User.CloseableSession currentSession = globals.getCurrentSession().getValue().get();
+
         nicknameLabel = new Label();
-        nicknameLabel.setText(session.getOwner().getUsername());
+        nicknameLabel.setText(currentSession.getOwner().getUsername());
         nicknameLabel.setMinHeight(26);
         nicknameLabel.setMaxHeight(26);
         nicknameLabel.setMaxWidth(Double.MAX_VALUE);
@@ -99,7 +138,7 @@ public class MainMenuActivity extends StatusActivity<Node> {
                 DocumentTreeNode currentNode = documentTreeView.getSelectionModel().getSelectedItems().get(0).getValue();
 
                 if (currentNode.isDocument()) {
-                    SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(session);
+                    SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(globals.getCurrentSession().getValue().get());
 
                     if (!revisions.isEmpty()) {
                         tabsView.getTabs().add(createTab(revisions.last()));
@@ -149,23 +188,19 @@ public class MainMenuActivity extends StatusActivity<Node> {
         rootPane.setDividerPositions(0.20);
     }
 
-    @Override
-    public void onLoad(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
-        super.onLoad(graphicsContext);
-
-        graphicsContext.bind(rootPane);
-
-        SimpleDocument simpleDocument = new SimpleDocument<String>(
+    private void fillWithData(User.AuthorizedSession currentSession) {
+        /* data hardcode fixme */
+        SimpleDocument simpleDocument = new SimpleDocument<>(
                 "u suck",
-                session.getOwner(),
+                currentSession.getOwner(),
                 "u suck, bitch!!!",
                 Document.ContentType.StringContentType.INSTANCE,
                 () -> "bullshit"
         );
 
-        Document.Revision r = (Document.Revision) simpleDocument.getRevisions(session).last();
-        r.comment(session, "U2, motherfucker!!!");
-
+        Document.Revision r = (Document.Revision) simpleDocument.getRevisions(currentSession).last();
+        r.comment(currentSession, "U2, motherfucker!!!");
+        r.comment(currentSession, "Когда я рассматривал покупку двухколесной техники, я достаточно долгое время сравнивал по дизайну и характеристикам несколько разных мотоциклов, чтобы решить для себя, на какой аппарат ориентироваться в дальнейшем, и с какого мотосалона начинать более пристальное изучение.");
 
         Set<SimpleDocument<?>> documents = new HashSet<>();
         documents.add(simpleDocument);
@@ -177,7 +212,7 @@ public class MainMenuActivity extends StatusActivity<Node> {
 
                     // todo fix this holy shit about generics
                     List<TreeItem<DocumentTreeNode>> revisionTreeItems = document
-                            .getRevisions(session)
+                            .getRevisions(currentSession)
                             .stream()
                             .map((revision) -> new DocumentTreeNode(revision))
                             .map(TreeItem::new)
@@ -190,21 +225,13 @@ public class MainMenuActivity extends StatusActivity<Node> {
                 .collect(Collectors.toList());
 
         documentTreeView.getRoot().getChildren().setAll(documentsTreeItems);
-
-//        tabsView.getTabs().add();
-    }
-
-    @Override
-    public void onUnload(@NotNull Core.ApplicationGraphicsContext<? super Node> graphicsContext) {
-        graphicsContext.unbind(rootPane);
-
-        super.onUnload(graphicsContext);
     }
 
     private <T> Tab createTab(@NotNull Document.Revision<T> revision) {
         Tab result = new Tab();
 
         StackPane documentContentViewWrapper = new StackPane();
+        documentContentViewWrapper.setPadding(new Insets(5));
         documentContentViewWrapper.setMaxHeight(Double.MAX_VALUE);
         documentContentViewWrapper.setMaxWidth(Double.MAX_VALUE);
         documentContentViewWrapper.getChildren().add(
@@ -235,44 +262,64 @@ public class MainMenuActivity extends StatusActivity<Node> {
         });
 
         GridPane documentMetadataView = new GridPane();
+        documentMetadataView.setPadding(new Insets(5));
+        documentMetadataView.setHgap(5);
+        documentMetadataView.setVgap(5);
+        documentMetadataView.setBackground(new Background(new BackgroundFill(INVERSE_BACKGROUND_COLOR, new CornerRadii(0), new Insets(0))));
+
         Label authorLabel = new Label();
         authorLabel.setText(revision.getAuthor().getUsername());
+        authorLabel.setTextFill(INVERSE_FOREGROUND_COLOR);
 
         Label authorTextLabel = new Label();
         authorTextLabel.setText("Author");
         authorTextLabel.setLabelFor(authorLabel);
+        authorTextLabel.setTextFill(INVERSE_FOREGROUND_COLOR);
 
         Label creationTimeLabel = new Label();
         creationTimeLabel.setText(revision.getCreationTime().toString());
+        creationTimeLabel.setTextFill(INVERSE_FOREGROUND_COLOR);
 
         Label creationTimeTextLabel = new Label();
         creationTimeTextLabel.setText("Creation time");
         creationTimeTextLabel.setLabelFor(creationTimeLabel);
+        creationTimeTextLabel.setTextFill(INVERSE_FOREGROUND_COLOR);
 
         documentMetadataView.addRow(0, authorTextLabel, authorLabel);
         documentMetadataView.addRow(1, creationTimeTextLabel, creationTimeLabel);
 
-        VBox commentsView = new VBox();
-        commentsView.setFillWidth(true);
-        commentsView.getChildren().addAll(
-                revision
-                        .getComments()
-                        .stream()
-                        .map((comment) -> {
+        ListView<Document.Comment> commentsView = new ListView<>();
+        commentsView.setPadding(new Insets(0, 5, 0, 5));
+        commentsView.setCellFactory(new Callback<ListView<Document.Comment>, ListCell<Document.Comment>>() {
+            @Override
+            public ListCell<Document.Comment> call(ListView<Document.Comment> commentListView) {
+                return new ListCell<Document.Comment>() {
+
+                    @Override
+                    protected void updateItem(Document.Comment comment, boolean empty) {
+                        if (empty) {
+                            setGraphic(null);
+                        } else {
                             BorderPane commentRoot = new BorderPane();
 
-                            Label commentTextLabel = new Label();
-                            commentTextLabel.setText(comment.getText());
+                            TextArea commentTextArea = new TextArea();
+                            commentTextArea.setText(comment.getText());
+                            commentTextArea.setEditable(false);
+                            commentTextArea.setWrapText(true);
+                            commentTextArea.setPrefHeight(52);
+                            commentTextArea.setMaxHeight(Double.MAX_VALUE);
 
                             Label usernameLabel = new Label();
+                            usernameLabel.setPadding(new Insets(5));
                             usernameLabel.setText(comment.getAuthor().getUsername());
-                            usernameLabel.setLabelFor(commentTextLabel);
+                            usernameLabel.setLabelFor(commentTextArea);
 
                             Label dateAndTimeLabel = new Label();
+                            dateAndTimeLabel.setPadding(new Insets(5));
                             dateAndTimeLabel.setText(comment.getCreationTime().toString());
-                            dateAndTimeLabel.setLabelFor(commentTextLabel);
+                            dateAndTimeLabel.setLabelFor(commentTextArea);
 
-                            commentRoot.setCenter(commentTextLabel);
+                            commentRoot.setCenter(commentTextArea);
                             commentRoot.setRight(
                                     VBoxBuilder
                                             .create()
@@ -281,9 +328,45 @@ public class MainMenuActivity extends StatusActivity<Node> {
                                             .build()
                             );
 
-                            return commentRoot;
-                        })
-                        .collect(Collectors.<Node>toList())
+                            setGraphic(commentRoot);
+                        }
+
+                        super.updateItem(comment, empty);
+                    }
+
+                };
+            }
+        });
+        commentsView.getItems().setAll(revision.getComments());
+
+        BorderPane commentInputView = new BorderPane();
+
+        TextArea commentInputArea = new TextArea();
+        commentInputArea.setPromptText("Enter your comment");
+        commentInputArea.setEditable(false);
+        commentInputArea.setWrapText(true);
+        commentInputArea.setPrefHeight(52);
+        commentInputArea.setMaxHeight(Double.MAX_VALUE);
+
+        Label usernameLabel = new Label();
+        usernameLabel.setPadding(new Insets(5));
+        usernameLabel.setText(globals.getCurrentSession().getValue().get().getOwner().getUsername());
+        usernameLabel.setLabelFor(commentInputArea);
+
+        Label dateAndTimeLabel = new Label();
+        dateAndTimeLabel.setPadding(new Insets(5));
+        dateAndTimeLabel.setLabelFor(commentInputArea);
+        scheduler.scheduleAtFixedRate(() -> {
+                Platform.runLater(() -> dateAndTimeLabel.setText(globals.getCurrentClock().getValue().instant().toString()));
+        }, 0, 50, TimeUnit.MILLISECONDS);
+
+        commentInputView.setCenter(commentInputArea);
+        commentInputView.setRight(
+                VBoxBuilder
+                        .create()
+                        .fillWidth(true)
+                        .children(usernameLabel, dateAndTimeLabel)
+                        .build()
         );
 
         VBox tabRoot = new VBox();
@@ -294,6 +377,7 @@ public class MainMenuActivity extends StatusActivity<Node> {
         tabRoot.getChildren().add(documentMetadataView);
         tabRoot.getChildren().add(horizontalSeparator());
         tabRoot.getChildren().add(commentsView);
+        tabRoot.getChildren().add(commentInputView);
 
         result.setText(revision.getDocument().getName());
         result.setDisable(false);

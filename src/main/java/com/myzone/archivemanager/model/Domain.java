@@ -1,8 +1,7 @@
 package com.myzone.archivemanager.model;
 
+import javafx.collections.ObservableSet;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Set;
 
 /**
  * @author myzone
@@ -11,6 +10,6 @@ import java.util.Set;
 public interface Domain {
 
     @NotNull
-    Set<Document<?>> getDocuments();
+    ObservableSet<Document<?>> getDocuments();
 
 }

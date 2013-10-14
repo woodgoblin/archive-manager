@@ -16,8 +16,6 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
  */
 public class GreenTreadCore<N, D extends Core.DataProvider> implements ScheduledCore<N, D> {
 
-    protected final UiBinding<? extends N> uiBinding;
-
     protected final GraphicsContextProvider<N> graphicsContextProvider;
     protected final DataContextProvider<D> dataContextProvider;
     protected final ProcessingContextProvider<?> processingContextProvider;
@@ -26,11 +24,9 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     protected final ExecutorService executor;
 
     public GreenTreadCore(
-            @NotNull UiBinding<? extends N> uiBinding,
             @NotNull GraphicsContextProvider<N> graphicsContextProvider,
             @NotNull DataContextProvider<D> dataContextProvider
     ) {
-        this.uiBinding = uiBinding;
         this.graphicsContextProvider = graphicsContextProvider;
         this.dataContextProvider = dataContextProvider;
         this.processingContextProvider = new ProcessingContextProvider<Object>() {
@@ -61,12 +57,10 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
     }
 
     public GreenTreadCore(
-            @NotNull UiBinding<? extends N> uiBinding,
             @NotNull GraphicsContextProvider<N> graphicsContextProvider,
             @NotNull DataContextProvider<D> dataContextProvider,
             @NotNull ProcessingContextProvider<?> processingContextProvider
     ) {
-        this.uiBinding = uiBinding;
         this.graphicsContextProvider = graphicsContextProvider;
         this.dataContextProvider = dataContextProvider;
         this.processingContextProvider = processingContextProvider;
@@ -82,14 +76,12 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
             throw new RuntimeException("Unknown service " + service);
         });
 
-        Consumer<R> threadSafeCallback = uiBinding.isUiThread() ? uiBinding.toUiCallback(callback) : callback;
-
         if (service instanceof ProcessingService) {
             ProcessingService processingService = (ProcessingService) service; // todo: it's a dirty hack, should be fixed
 
             executeOn.accept(() -> {
                 try {
-                    processingService.process(request, threadSafeCallback, processingContextProvider.provide(processingService));
+                    processingService.process(request, callback, processingContextProvider.provide(processingService));
                 } catch (ProcessingService.YieldException ignored) {
                     // just yield has been happened, all is fine
                 }
@@ -97,7 +89,7 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
         } else if (service instanceof DataService) {
             DataService<? super A, ? extends R, ? super D> dataService = (DataService<? super A, ? extends R, ? super D>) service;
 
-            executeOn.accept(() -> dataService.process(request, threadSafeCallback, dataContextProvider.provide(dataService)));
+            executeOn.accept(() -> dataService.process(request, callback, dataContextProvider.provide(dataService)));
         } else {
             throw new RuntimeException("Unknown service " + service);
         }
@@ -105,12 +97,12 @@ public class GreenTreadCore<N, D extends Core.DataProvider> implements Scheduled
 
     @Override
     public <R> void loadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder) {
-        uiBinding.runOnUiThread(() -> activity.onLoad(graphicsContextProvider.provide(activity, root, binder)));
+        activity.onLoad(graphicsContextProvider.provide(activity, root, binder));
     }
 
     @Override
     public <R> void unloadActivity(@NotNull Activity<? extends N> activity, @NotNull R root, @NotNull Binder<? super R, ? super N> binder) {
-        uiBinding.runOnUiThread(() -> activity.onUnload(graphicsContextProvider.provide(activity, root, binder)));
+        activity.onUnload(graphicsContextProvider.provide(activity, root, binder));
     }
 
     @Override

@@ -1,10 +1,9 @@
 package com.myzone.archivemanager.model;
 
+import com.myzone.utils.ObservableNavigableSet;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
-import java.util.NavigableSet;
 
 /**
  * @author myzone
@@ -20,7 +19,7 @@ public interface User {
     void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword);
 
     @NotNull
-    NavigableSet<Session> getSessions();
+    ObservableNavigableSet<Session> getSessions();
 
     @NotNull
     CloseableSession startSession(@NotNull String password) throws SessionStartFailedException;

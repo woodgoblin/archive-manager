@@ -10,19 +10,6 @@ import java.util.function.Consumer;
  */
 public interface ScheduledCore<N, D extends Core.DataProvider> extends Core<N, D> {
 
-    interface UiBinding<N> {
-
-        boolean isUiThread();
-
-        void runOnUiThread(@NotNull Runnable runnable);
-
-        @NotNull
-        default <T> Consumer<T> toUiCallback(@NotNull Consumer<T> callback) {
-            return arg -> runOnUiThread(() -> callback.accept(arg));
-        }
-
-    }
-
     interface GraphicsContextProvider<N> {
 
         @NotNull
@@ -48,7 +35,6 @@ public interface ScheduledCore<N, D extends Core.DataProvider> extends Core<N, D
 
         @NotNull
         ScheduledCore<N, D> create(
-                @NotNull ScheduledCore.UiBinding<? extends N> uiBinding,
                 @NotNull ScheduledCore.GraphicsContextProvider<N> graphicsContextProvider,
                 @NotNull ScheduledCore.DataContextProvider<D> dataContextProvider
         );

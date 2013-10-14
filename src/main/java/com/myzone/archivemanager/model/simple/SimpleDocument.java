@@ -3,6 +3,8 @@ package com.myzone.archivemanager.model.simple;
 import com.google.common.base.Objects;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
+import com.myzone.utils.ObservableNavigableSet;
+import com.myzone.utils.ObservableNavigableSetWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
@@ -12,7 +14,8 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyNavigableSet;
+import static java.util.Collections.unmodifiableNavigableSet;
 
 /**
  * @author myzone
@@ -46,7 +49,7 @@ public class SimpleDocument<C> implements Document<C> {
 
     @NotNull
     @Override
-    public ContentType getContentType() {
+    public ContentType<C> getContentType() {
         return contentType;
     }
 
@@ -58,12 +61,12 @@ public class SimpleDocument<C> implements Document<C> {
 
     @NotNull
     @Override
-    public NavigableSet<Revision<C>> getRevisions(@NotNull User.AuthorizedSession authorizedSession) {
+    public ObservableNavigableSet<Revision<C>> getRevisions(@NotNull User.AuthorizedSession authorizedSession) {
         if (!isReadableBy(authorizedSession.getOwner())) {
-            return emptyNavigableSet();
+            return new ObservableNavigableSetWrapper<>(emptyNavigableSet());
         }
 
-        return unmodifiableNavigableSet(revisions);
+        return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(revisions));
     }
 
     @Override
@@ -126,8 +129,8 @@ public class SimpleDocument<C> implements Document<C> {
 
         @NotNull
         @Override
-        public NavigableSet<Comment> getComments() {
-            return unmodifiableNavigableSet(comments);
+        public ObservableNavigableSet<Comment> getComments() {
+            return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(comments));
         }
 
         @Override
@@ -161,9 +164,9 @@ public class SimpleDocument<C> implements Document<C> {
                         comments.remove(comment);
                     }
                 } else {
-                    if (isLastOf(comment.getCause().get().getAnswers(), comment)) {
+//                    if (isLastOf(comment.getCause().get().getAnswers(), comment)) { @fixme ObservableNaviagbleSet should be used
                         ((SimpleComment) comment.getCause().get()).removeAnswer(comment);
-                    }
+//                    }
                 }
             }
         }
@@ -277,8 +280,8 @@ public class SimpleDocument<C> implements Document<C> {
 
             @NotNull
             @Override
-            public NavigableSet<Comment> getAnswers() {
-                return unmodifiableNavigableSet(answers);
+            public ObservableNavigableSet<Comment> getAnswers() {
+                return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(answers));
             }
 
             @Override

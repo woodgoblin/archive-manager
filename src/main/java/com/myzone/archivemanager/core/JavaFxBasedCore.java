@@ -1,6 +1,5 @@
 package com.myzone.archivemanager.core;
 
-import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;
@@ -20,19 +19,6 @@ public class JavaFxBasedCore<D extends Core.DataProvider> implements Core<Node, 
             @NotNull ScheduledCore.DataContextProvider<D> dataContextProvider
     ) {
         underlyingCore = underlyingCoreFactory.create(
-                new GreenTreadCore.UiBinding<Node>() {
-
-                    @Override
-                    public boolean isUiThread() {
-                        return Platform.isFxApplicationThread();
-                    }
-
-                    @Override
-                    public void runOnUiThread(@NotNull Runnable runnable) {
-                        Platform.runLater(runnable);
-                    }
-
-                },
                 new ScheduledCore.GraphicsContextProvider<Node>() {
 
                     @NotNull
