@@ -8,6 +8,7 @@ import com.myzone.archivemanager.services.ContentRenderingService;
 import com.myzone.archivemanager.services.GlobalsService;
 import com.myzone.utils.SynchronizedConsumer;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.*;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -23,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.myzone.utils.ObservableCollections.toReadonlyObservableList;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 /**
@@ -337,13 +339,12 @@ public class MainMenuActivity extends StatusActivity<Node> {
                 };
             }
         });
-        commentsView.getItems().setAll(revision.getComments());
+        Bindings.bindContent(commentsView.getItems(), toReadonlyObservableList(revision.getComments()));
 
         BorderPane commentInputView = new BorderPane();
 
         TextArea commentInputArea = new TextArea();
         commentInputArea.setPromptText("Enter your comment");
-        commentInputArea.setEditable(false);
         commentInputArea.setWrapText(true);
         commentInputArea.setPrefHeight(52);
         commentInputArea.setMaxHeight(Double.MAX_VALUE);
@@ -360,12 +361,18 @@ public class MainMenuActivity extends StatusActivity<Node> {
                 Platform.runLater(() -> dateAndTimeLabel.setText(globals.getCurrentClock().getValue().instant().toString()));
         }, 0, 50, TimeUnit.MILLISECONDS);
 
+        Button submitButton = new Button();
+        submitButton.setText("Submit");
+        submitButton.setOnAction((event) -> {
+            revision.comment(globals.getCurrentSession().getValue().get(), commentInputArea.getText());
+        });
+
         commentInputView.setCenter(commentInputArea);
         commentInputView.setRight(
                 VBoxBuilder
                         .create()
                         .fillWidth(true)
-                        .children(usernameLabel, dateAndTimeLabel)
+                        .children(usernameLabel, dateAndTimeLabel, submitButton)
                         .build()
         );
 

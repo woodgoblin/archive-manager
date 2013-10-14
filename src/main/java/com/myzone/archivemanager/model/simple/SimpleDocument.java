@@ -5,6 +5,7 @@ import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.utils.ObservableNavigableSet;
 import com.myzone.utils.ObservableNavigableSetWrapper;
+import com.myzone.utils.ReadOnlyObservableNavigableSetWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
@@ -26,13 +27,13 @@ public class SimpleDocument<C> implements Document<C> {
     private final String name;
     private volatile ContentType contentType;
     private volatile DocumentType documentType;
-    private final NavigableSet<Revision<C>> revisions;
+    private final ObservableNavigableSet<Revision<C>> revisions;
 
     public SimpleDocument(String name, User creator, C content, ContentType contentType, DocumentType documentType) {
         this.name = name;
         this.contentType = contentType;
         this.documentType = documentType;
-        this.revisions = new TreeSet<>();
+        this.revisions = new ObservableNavigableSetWrapper<>(new TreeSet<>());
 
         revisions.add(new SimpleRevision(
                 creator,
@@ -66,7 +67,7 @@ public class SimpleDocument<C> implements Document<C> {
             return new ObservableNavigableSetWrapper<>(emptyNavigableSet());
         }
 
-        return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(revisions));
+        return new ReadOnlyObservableNavigableSetWrapper<>(revisions);
     }
 
     @Override
@@ -99,13 +100,13 @@ public class SimpleDocument<C> implements Document<C> {
 
         protected final User author;
         protected final Instant creationTime;
-        protected final NavigableSet<Comment> comments;
+        protected final ObservableNavigableSet<Comment> comments;
         protected final C content;
 
         public SimpleRevision(User author, Instant creationTime, C content) {
             this.author = author;
             this.creationTime = creationTime;
-            this.comments = new TreeSet<>();
+            this.comments = new ObservableNavigableSetWrapper<>(new TreeSet<>());
             this.content = content;
         }
 
@@ -130,7 +131,7 @@ public class SimpleDocument<C> implements Document<C> {
         @NotNull
         @Override
         public ObservableNavigableSet<Comment> getComments() {
-            return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(comments));
+            return new ReadOnlyObservableNavigableSetWrapper<>(comments);
         }
 
         @Override
@@ -164,9 +165,9 @@ public class SimpleDocument<C> implements Document<C> {
                         comments.remove(comment);
                     }
                 } else {
-//                    if (isLastOf(comment.getCause().get().getAnswers(), comment)) { @fixme ObservableNaviagbleSet should be used
+                    if (isLastOf(comment.getCause().get().getAnswers(), comment)) {
                         ((SimpleComment) comment.getCause().get()).removeAnswer(comment);
-//                    }
+                    }
                 }
             }
         }

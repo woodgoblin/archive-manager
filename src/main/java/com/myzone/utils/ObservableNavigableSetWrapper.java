@@ -154,7 +154,7 @@ public class ObservableNavigableSetWrapper<E> implements ObservableNavigableSet<
 
     @NotNull
     @Override
-    public ObservableNavigableSetWrapper<E> descendingSet() {
+    public ObservableNavigableSet<E> descendingSet() {
         return new ObservableNavigableSetWrapper<>(origin.descendingSet(), listenerHelper);
     }
 
