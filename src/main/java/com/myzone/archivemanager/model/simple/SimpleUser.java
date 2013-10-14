@@ -2,8 +2,8 @@ package com.myzone.archivemanager.model.simple;
 
 import com.google.common.base.Objects;
 import com.myzone.archivemanager.model.User;
-import com.myzone.utils.ObservableNavigableSet;
-import com.myzone.utils.ObservableNavigableSetWrapper;
+import com.myzone.utils.bindings.ObservableNavigableSet;
+import com.myzone.utils.bindings.ObservableNavigableSetWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;

@@ -1,4 +1,4 @@
-package com.myzone.utils;
+package com.myzone.utils.bindings;
 
 import com.sun.javafx.binding.SetExpressionHelper;
 import com.sun.javafx.collections.SetListenerHelper;

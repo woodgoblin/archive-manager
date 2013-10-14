@@ -1,4 +1,4 @@
-package com.myzone.utils;
+package com.myzone.utils.bindings;
 
 import javafx.beans.InvalidationListener;
 import javafx.collections.SetChangeListener;

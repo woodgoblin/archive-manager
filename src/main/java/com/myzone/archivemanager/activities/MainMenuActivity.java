@@ -20,12 +20,11 @@ import javafx.util.StringConverter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.myzone.utils.ObservableCollections.toReadonlyObservableList;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static com.myzone.utils.TaskScheduler.scheduleAtFixedRate;
+import static com.myzone.utils.javafx.ObservableCollections.toReadonlyObservableList;
 
 /**
  * @author myzone
@@ -40,7 +39,6 @@ public class MainMenuActivity extends StatusActivity<Node> {
     private final ContentRenderingService contentRenderingService;
 
     private final GlobalsService.Globals globals;
-    private final ScheduledExecutorService scheduler;
 
     private SplitPane rootPane;
 
@@ -58,7 +56,6 @@ public class MainMenuActivity extends StatusActivity<Node> {
         SynchronizedConsumer<GlobalsService.Globals> globalsConsumer = new SynchronizedConsumer<>();
         core.processRequest(globalsService, null, globalsConsumer);
         globals = globalsConsumer.get();
-        scheduler = newSingleThreadScheduledExecutor();
 
         initUi();
     }
@@ -357,8 +354,8 @@ public class MainMenuActivity extends StatusActivity<Node> {
         Label dateAndTimeLabel = new Label();
         dateAndTimeLabel.setPadding(new Insets(5));
         dateAndTimeLabel.setLabelFor(commentInputArea);
-        scheduler.scheduleAtFixedRate(() -> {
-                Platform.runLater(() -> dateAndTimeLabel.setText(globals.getCurrentClock().getValue().instant().toString()));
+        scheduleAtFixedRate(() -> {
+            Platform.runLater(() -> dateAndTimeLabel.setText(globals.getCurrentClock().getValue().instant().toString()));
         }, 0, 50, TimeUnit.MILLISECONDS);
 
         Button submitButton = new Button();

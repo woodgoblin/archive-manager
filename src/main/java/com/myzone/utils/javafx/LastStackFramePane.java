@@ -1,4 +1,4 @@
-package com.myzone.utils;
+package com.myzone.utils.javafx;
 
 import com.sun.javafx.collections.ObservableListWrapper;
 import javafx.collections.ListChangeListener;

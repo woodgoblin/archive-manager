@@ -1,6 +1,6 @@
 package com.myzone.archivemanager.model;
 
-import com.myzone.utils.ObservableNavigableSet;
+import com.myzone.utils.bindings.ObservableNavigableSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;

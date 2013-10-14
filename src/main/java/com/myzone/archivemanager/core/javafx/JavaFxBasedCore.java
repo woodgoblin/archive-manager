@@ -1,5 +1,6 @@
-package com.myzone.archivemanager.core;
+package com.myzone.archivemanager.core.javafx;
 
+import com.myzone.archivemanager.core.*;
 import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import org.jetbrains.annotations.NotNull;

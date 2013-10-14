@@ -1,4 +1,4 @@
-package com.myzone.utils;
+package com.myzone.utils.tuple;
 
 import org.jetbrains.annotations.NotNull;
 

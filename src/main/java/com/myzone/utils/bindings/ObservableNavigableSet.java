@@ -1,4 +1,4 @@
-package com.myzone.utils;
+package com.myzone.utils.bindings;
 
 import javafx.collections.ObservableSet;
 import org.jetbrains.annotations.NotNull;

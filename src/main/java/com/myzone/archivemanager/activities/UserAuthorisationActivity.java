@@ -4,7 +4,7 @@ import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.services.UserAuthorizationService;
-import com.myzone.utils.LastStackFramePane;
+import com.myzone.utils.javafx.LastStackFramePane;
 import javafx.beans.InvalidationListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static com.myzone.archivemanager.core.JavaFxBasedCore.binder;
+import static com.myzone.archivemanager.core.javafx.JavaFxBasedCore.binder;
 import static com.myzone.archivemanager.model.User.CloseableSession;
 import static com.myzone.utils.TaskScheduler.schedule;
 import static javafx.application.Platform.runLater;

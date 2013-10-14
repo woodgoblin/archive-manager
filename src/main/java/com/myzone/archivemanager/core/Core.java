@@ -1,7 +1,7 @@
 package com.myzone.archivemanager.core;
 
 import com.myzone.archivemanager.data.DataAccessor;
-import com.myzone.utils.ImmutableTuple;
+import com.myzone.utils.tuple.ImmutableTuple;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
