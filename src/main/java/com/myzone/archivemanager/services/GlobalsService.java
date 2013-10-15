@@ -7,6 +7,7 @@ import javafx.beans.property.Property;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ObservableValue;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
@@ -44,7 +45,7 @@ public class GlobalsService implements ProcessingService<Void, GlobalsService.Gl
 
         Property<Optional<User.CloseableSession>> getCurrentSession();
 
-        ReadOnlyProperty<Clock> getCurrentClock();
+        ObservableValue<Clock> getCurrentClock();
 
     }
 
@@ -64,7 +65,7 @@ public class GlobalsService implements ProcessingService<Void, GlobalsService.Gl
         }
 
         @Override
-        public ReadOnlyProperty<Clock> getCurrentClock() {
+        public ObservableValue<Clock> getCurrentClock() {
             return currentClock;
         }
 

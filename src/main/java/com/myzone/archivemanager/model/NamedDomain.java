@@ -14,8 +14,8 @@ public interface NamedDomain extends Domain {
     @NotNull
     String getDescription();
 
-    void modifyName(@NotNull User.AuthorizedSession session, @NotNull String name);
+    void modifyName(@NotNull User.AuthorizedSession session, @NotNull String name) throws NoAccessExecption;
 
-    void modifyDescription(@NotNull User.AuthorizedSession session, @NotNull String description);
+    void modifyDescription(@NotNull User.AuthorizedSession session, @NotNull String description) throws NoAccessExecption;
 
 }

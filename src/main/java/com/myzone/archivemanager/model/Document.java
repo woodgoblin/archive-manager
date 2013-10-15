@@ -28,7 +28,7 @@ public interface Document<C> {
     @NotNull
     ObservableNavigableSet<Revision<C>> getRevisions(@NotNull AuthorizedSession authorizedSession);
 
-    void updateBy(@NotNull AuthorizedSession authorizedSession, C content);
+    void updateBy(@NotNull AuthorizedSession authorizedSession, C content) throws NoAccessExecption;
 
     boolean isReadableBy(@NotNull User user);
 
@@ -50,11 +50,11 @@ public interface Document<C> {
         @NotNull
         ObservableNavigableSet<Comment> getComments();
 
-        void comment(@NotNull AuthorizedSession authorizedSession, @NotNull String commentText);
+        Comment comment(@NotNull AuthorizedSession authorizedSession, @NotNull String commentText) throws NoAccessExecption;
 
-        void commentFor(@NotNull AuthorizedSession authorizedSession, @NotNull Comment cause, @NotNull String commentText);
+        Comment commentFor(@NotNull AuthorizedSession authorizedSession, @NotNull Comment cause, @NotNull String commentText) throws NoAccessExecption;
 
-        void removeComment(@NotNull AuthorizedSession authorizedSession, @NotNull Comment comment);
+        void removeComment(@NotNull AuthorizedSession authorizedSession, @NotNull Comment comment) throws NoAccessExecption;
 
         C getContent();
 

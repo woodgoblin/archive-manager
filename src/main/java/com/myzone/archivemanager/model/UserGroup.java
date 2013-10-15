@@ -9,9 +9,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface UserGroup {
 
-    void rank(@NotNull User.AuthorizedSession session, @NotNull User targetUser);
+    void rank(@NotNull User.AuthorizedSession session, @NotNull User targetUser) throws NoAccessExecption;
 
-    void disrank(@NotNull User.AuthorizedSession session, @NotNull User targetUser);
+    void disrank(@NotNull User.AuthorizedSession session, @NotNull User targetUser) throws NoAccessExecption;
 
     @NotNull
     ObservableSet<User> getUsers();

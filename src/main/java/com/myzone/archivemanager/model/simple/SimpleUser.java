@@ -1,6 +1,7 @@
 package com.myzone.archivemanager.model.simple;
 
 import com.google.common.base.Objects;
+import com.myzone.archivemanager.model.NoAccessExecption;
 import com.myzone.archivemanager.model.User;
 import com.myzone.utils.bindings.ObservableNavigableSet;
 import com.myzone.utils.bindings.ObservableNavigableSetWrapper;
@@ -36,7 +37,7 @@ public class SimpleUser implements User {
     }
 
     @Override
-    public void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword) {
+    public void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword) throws NoAccessExecption {
         if (equals(authorizedSession.getOwner()))  {
             password = newPassword;
         }

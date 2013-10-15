@@ -1,6 +1,7 @@
 package com.myzone.archivemanager.model.simple;
 
 import com.google.common.base.Objects;
+import com.myzone.archivemanager.model.NoAccessExecption;
 import com.myzone.archivemanager.model.Document;
 import com.myzone.archivemanager.model.User;
 import com.myzone.utils.bindings.ObservableNavigableSet;
@@ -10,13 +11,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import static java.util.Collections.emptyNavigableSet;
-import static java.util.Collections.unmodifiableNavigableSet;
 
 /**
  * @author myzone
@@ -71,7 +70,7 @@ public class SimpleDocument<C> implements Document<C> {
     }
 
     @Override
-    public void updateBy(@NotNull User.AuthorizedSession authorizedSession, C content) {
+    public void updateBy(@NotNull User.AuthorizedSession authorizedSession, C content) throws NoAccessExecption {
         if (isWritableBy(authorizedSession.getOwner())) {
             revisions.add(new SimpleRevision(
                     authorizedSession.getOwner(),
@@ -135,39 +134,60 @@ public class SimpleDocument<C> implements Document<C> {
         }
 
         @Override
-        public void comment(@NotNull User.AuthorizedSession authorizedSession, @NotNull String commentText) {
-            if (isCommentableBy(authorizedSession.getOwner())) {
-                comments.add(new SimpleComment(
-                        authorizedSession.getOwner(),
-                        Clock.systemDefaultZone().instant(),
-                        commentText
-                ));
-            }
+        public Comment comment(@NotNull User.AuthorizedSession authorizedSession, @NotNull String commentText) throws NoAccessExecption {
+            if (!isCommentableBy(authorizedSession.getOwner()))
+                throw new NoAccessExecption();
+
+
+            SimpleComment simpleComment = new SimpleComment(
+                    authorizedSession.getOwner(),
+                    Clock.systemDefaultZone().instant(),
+                    commentText
+            );
+
+            comments.add(simpleComment);
+
+            return simpleComment;
         }
 
         @Override
-        public void commentFor(@NotNull User.AuthorizedSession authorizedSession, @NotNull Comment cause, @NotNull String commentText) {
-            if (isOurComment(cause) && isCommentableBy(authorizedSession.getOwner())) {
-                ((SimpleComment) cause).addAnswer(new SimpleComment(
-                        authorizedSession.getOwner(),
-                        Clock.systemDefaultZone().instant(),
-                        commentText,
-                        cause
-                ));
-            }
+        public Comment commentFor(@NotNull User.AuthorizedSession authorizedSession, @NotNull Comment cause, @NotNull String commentText) throws NoAccessExecption {
+            if (!isCommentableBy(authorizedSession.getOwner()))
+                throw new NoAccessExecption();
+
+            if (isOurComment(cause))
+                throw new IllegalArgumentException("cause");
+
+            SimpleComment simpleComment = new SimpleComment(
+                    authorizedSession.getOwner(),
+                    Clock.systemDefaultZone().instant(),
+                    commentText,
+                    cause
+            );
+
+            ((SimpleComment) cause).addAnswer(simpleComment);
+
+            return simpleComment;
         }
 
         @Override
-        public void removeComment(@NotNull User.AuthorizedSession authorizedSession, @NotNull Comment comment) {
-            if (isOurComment(comment) && isCommentableBy(authorizedSession.getOwner()) && comment.getAuthor().equals(authorizedSession.getOwner())) {
-                if (!comment.getCause().isPresent()) {
-                    if (isLastOf(comments, comment)) {
-                        comments.remove(comment);
-                    }
-                } else {
-                    if (isLastOf(comment.getCause().get().getAnswers(), comment)) {
-                        ((SimpleComment) comment.getCause().get()).removeAnswer(comment);
-                    }
+        public void removeComment(@NotNull User.AuthorizedSession authorizedSession, @NotNull Comment comment) throws NoAccessExecption {
+            if (!isCommentableBy(authorizedSession.getOwner()))
+                throw new NoAccessExecption();
+
+            if (!comment.getAuthor().equals(authorizedSession.getOwner()))
+                throw new NoAccessExecption();
+
+            if (!isOurComment(comment))
+                throw new IllegalArgumentException("comment");
+
+            if (!comment.getCause().isPresent()) {
+                if (isLastOf(comments, comment)) {
+                    comments.remove(comment);
+                }
+            } else {
+                if (isLastOf(comment.getCause().get().getAnswers(), comment)) {
+                    ((SimpleComment) comment.getCause().get()).removeAnswer(comment);
                 }
             }
         }
@@ -225,22 +245,27 @@ public class SimpleDocument<C> implements Document<C> {
             protected final Instant creationTime;
             protected final String text;
             protected final Optional<Comment> cause;
-            protected final NavigableSet<Comment> answers;
+            protected final ObservableNavigableSet<Comment> answers;
 
             public SimpleComment(@NotNull User author, @NotNull Instant creationTime, @NotNull String text) {
-                this.author = author;
-                this.creationTime = creationTime;
-                this.text = text;
-                this.cause = Optional.empty();
-                this.answers = new TreeSet<>();
+                this(author, creationTime, text, Optional.empty());
             }
 
             public SimpleComment(@NotNull User author, @NotNull Instant creationTime, @NotNull String text, @NotNull Comment cause) {
+                this(author, creationTime, text, Optional.of(cause));
+            }
+
+            protected SimpleComment(
+                    @NotNull User author,
+                    @NotNull Instant creationTime,
+                    @NotNull String text,
+                    @NotNull Optional<Comment> cause
+            ) {
                 this.author = author;
                 this.creationTime = creationTime;
                 this.text = text;
-                this.cause = Optional.of(cause);
-                this.answers = new TreeSet<>();
+                this.cause = cause;
+                this.answers = new ObservableNavigableSetWrapper<>(new TreeSet<>());
             }
 
             public Revision<C> getRevision() {
@@ -282,7 +307,7 @@ public class SimpleDocument<C> implements Document<C> {
             @NotNull
             @Override
             public ObservableNavigableSet<Comment> getAnswers() {
-                return new ObservableNavigableSetWrapper<>(unmodifiableNavigableSet(answers));
+                return new ReadOnlyObservableNavigableSetWrapper<Comment>(answers);
             }
 
             @Override

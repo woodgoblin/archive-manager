@@ -16,7 +16,7 @@ public interface User {
 
     boolean isRightPassword(@NotNull String password);
 
-    void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword);
+    void modifyPassword(@NotNull AuthorizedSession authorizedSession, @NotNull String newPassword) throws NoAccessExecption;
 
     @NotNull
     ObservableNavigableSet<Session> getSessions();

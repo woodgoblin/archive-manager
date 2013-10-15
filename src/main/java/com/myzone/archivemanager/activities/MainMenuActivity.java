@@ -2,6 +2,7 @@ package com.myzone.archivemanager.activities;
 
 import com.myzone.archivemanager.core.Core;
 import com.myzone.archivemanager.model.Document;
+import com.myzone.archivemanager.model.NoAccessExecption;
 import com.myzone.archivemanager.model.User;
 import com.myzone.archivemanager.model.simple.SimpleDocument;
 import com.myzone.archivemanager.services.ContentRenderingService;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.myzone.utils.TaskScheduler.scheduleAtFixedRate;
-import static com.myzone.utils.javafx.ObservableCollections.toReadonlyObservableList;
+import static com.myzone.utils.bindings.ObservableUtils.toReadonlyObservableList;
 
 /**
  * @author myzone
@@ -134,16 +135,20 @@ public class MainMenuActivity extends StatusActivity<Node> {
         documentTreeView.setRoot(new TreeItem<DocumentTreeNode>(new DocumentTreeNode<>()));
         documentTreeView.setOnMouseClicked((event) -> {
             if (event.getClickCount() > 1) {
-                DocumentTreeNode currentNode = documentTreeView.getSelectionModel().getSelectedItems().get(0).getValue();
+                TreeItem<DocumentTreeNode> selectedItem = documentTreeView.getSelectionModel().getSelectedItem();
 
-                if (currentNode.isDocument()) {
-                    SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(globals.getCurrentSession().getValue().get());
+                if (selectedItem != null) {
+                    DocumentTreeNode currentNode = selectedItem.getValue();
 
-                    if (!revisions.isEmpty()) {
-                        tabsView.getTabs().add(createTab(revisions.last()));
+                    if (currentNode.isDocument()) {
+                        SortedSet<? extends Document.Revision<?>> revisions = currentNode.getDocument().getRevisions(currentSession);
+
+                        if (!revisions.isEmpty()) {
+                            tabsView.getTabs().add(createTab(revisions.last()));
+                        }
+                    } else if (currentNode.isRevision()) {
+                        tabsView.getTabs().add(createTab(currentNode.getRevision()));
                     }
-                } else if (currentNode.isRevision()) {
-                    tabsView.getTabs().add(createTab(currentNode.getRevision()));
                 }
             }
         });
@@ -198,11 +203,20 @@ public class MainMenuActivity extends StatusActivity<Node> {
         );
 
         Document.Revision r = (Document.Revision) simpleDocument.getRevisions(currentSession).last();
-        r.comment(currentSession, "U2, motherfucker!!!");
-        r.comment(currentSession, "Когда я рассматривал покупку двухколесной техники, я достаточно долгое время сравнивал по дизайну и характеристикам несколько разных мотоциклов, чтобы решить для себя, на какой аппарат ориентироваться в дальнейшем, и с какого мотосалона начинать более пристальное изучение.");
+        try {
+            r.comment(currentSession, "U2, motherfucker!!!");
+        } catch (NoAccessExecption e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+        try {
+            r.comment(currentSession, "Когда я рассматривал покупку двухколесной техники, я достаточно долгое время сравнивал по дизайну и характеристикам несколько разных мотоциклов, чтобы решить для себя, на какой аппарат ориентироваться в дальнейшем, и с какого мотосалона начинать более пристальное изучение.");
+        } catch (NoAccessExecption e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
 
         Set<SimpleDocument<?>> documents = new HashSet<>();
         documents.add(simpleDocument);
+
 
         List<TreeItem<DocumentTreeNode>> documentsTreeItems = documents
                 .stream()
@@ -230,7 +244,7 @@ public class MainMenuActivity extends StatusActivity<Node> {
         Tab result = new Tab();
 
         StackPane documentContentViewWrapper = new StackPane();
-        documentContentViewWrapper.setPadding(new Insets(5));
+        documentContentViewWrapper.setPadding(new Insets(40, 0, 40, 0));
         documentContentViewWrapper.setMaxHeight(Double.MAX_VALUE);
         documentContentViewWrapper.setMaxWidth(Double.MAX_VALUE);
         documentContentViewWrapper.getChildren().add(
@@ -339,6 +353,7 @@ public class MainMenuActivity extends StatusActivity<Node> {
         Bindings.bindContent(commentsView.getItems(), toReadonlyObservableList(revision.getComments()));
 
         BorderPane commentInputView = new BorderPane();
+        commentInputView.setPadding(new Insets(5));
 
         TextArea commentInputArea = new TextArea();
         commentInputArea.setPromptText("Enter your comment");
@@ -361,7 +376,27 @@ public class MainMenuActivity extends StatusActivity<Node> {
         Button submitButton = new Button();
         submitButton.setText("Submit");
         submitButton.setOnAction((event) -> {
-            revision.comment(globals.getCurrentSession().getValue().get(), commentInputArea.getText());
+            String comment = commentInputArea.getText();
+
+            if (!comment.isEmpty()) {
+                commentInputArea.setText("");
+
+                Document.Comment cause = commentsView.getSelectionModel().getSelectedItem();
+
+                if (cause == null) {
+                    try {
+                        revision.comment(globals.getCurrentSession().getValue().get(), comment);
+                    } catch (NoAccessExecption e) {
+                        e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                    }
+                } else {
+                    try {
+                        revision.commentFor(globals.getCurrentSession().getValue().get(), cause, comment);
+                    } catch (NoAccessExecption e) {
+                        e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+                    }
+                }
+            }
         });
 
         commentInputView.setCenter(commentInputArea);
